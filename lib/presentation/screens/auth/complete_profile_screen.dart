@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../../core/utils/validators.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -25,7 +28,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   bool _obscureConfirm = true;
   String? _selectedGender;
   DateTime? _selectedDate;
-  bool _isLoading = false;
 
   // Errors
   String? _nameError;
@@ -141,7 +143,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         '${date.year}';
   }
 
-  void _continue() {
+  void _continue() async {
     setState(() {
       _nameError = null;
       _emailError = null;
@@ -154,37 +156,54 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
 
-    if (name.isEmpty) {
-      setState(() => _nameError = 'Please enter your full name');
-      return;
-    }
-    if (email.isNotEmpty &&
-        !RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email)) {
-      setState(() => _emailError = 'Please enter a valid email');
-      return;
-    }
-    if (password.length < 6) {
-      setState(() => _passwordError = 'Password must be at least 6 characters');
-      return;
-    }
-    if (confirm != password) {
-      setState(() => _confirmError = 'Passwords do not match');
+    final nameError = Validators.validateEmpty(name, 'full name');
+    if (nameError != null) setState(() => _nameError = nameError);
+
+    final inputEmailError = Validators.validateEmail(email);
+    if (inputEmailError != null) setState(() => _emailError = inputEmailError);
+
+    final passError = Validators.validatePassword(password);
+    if (passError != null) setState(() => _passwordError = passError);
+
+    final confirmPassError = Validators.validateConfirmPassword(confirm, password);
+    if (confirmPassError != null) setState(() => _confirmError = confirmPassError);
+
+    if (_nameError != null || _emailError != null || _passwordError != null || _confirmError != null) {
       return;
     }
 
-    setState(() => _isLoading = true);
+    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    if (phone == null) {
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phone number not found in session')),
+      );
+      return;
+    }
 
-    // TODO: Call register API
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.pushNamed(context, '/signup/vehicle');
-      }
-    });
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.register(
+      phoneNumber: phone,
+      password: password,
+      fullName: name,
+      email: email.isNotEmpty ? email : null,
+    );
+
+    if (success && mounted) {
+      Navigator.pushNamed(context, '/signup/vehicle');
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Registration failed'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -454,8 +473,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     // ─── Continue button ──────────
                     AppButton(
                       text: 'Continue',
-                      isLoading: _isLoading,
-                      onPressed: _isFormValid ? _continue : null,
+                      isLoading: isLoading,
+                      onPressed: _isFormValid && !isLoading ? _continue : null,
                     ),
 
                     const SizedBox(height: AppSizes.xl),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../../core/utils/validators.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -18,7 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _phoneError;
   String? _passwordError;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -35,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _obscurePassword = !_obscurePassword);
   }
 
-  void _login() {
+  void _login() async {
     setState(() {
       _phoneError = null;
       _passwordError = null;
@@ -44,37 +46,39 @@ class _LoginScreenState extends State<LoginScreen> {
     final phone = _phoneController.text.trim();
     final password = _passwordController.text;
 
-    // Basic validation
-    if (phone.isEmpty) {
-      setState(() => _phoneError = 'Please enter your phone number');
-      return;
-    }
-    if (phone.length < 9) {
-      setState(() => _phoneError = 'Please enter a valid phone number');
-      return;
-    }
-    if (password.isEmpty) {
-      setState(() => _passwordError = 'Please enter your password');
-      return;
-    }
-    if (password.length < 6) {
-      setState(() => _passwordError = 'Password must be at least 6 characters');
+    final phoneError = Validators.validatePhone(phone);
+    if (phoneError != null) {
+      setState(() => _phoneError = phoneError);
       return;
     }
 
-    // TODO: Call auth API
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        // Navigate to home on success
-        // Navigator.pushReplacementNamed(context, '/home');
-      }
-    });
+    final passError = Validators.validatePassword(password);
+    if (passError != null) {
+      setState(() => _passwordError = passError);
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.login('0$phone', password);
+
+    if (success && mounted) {
+      // Navigate to home on success
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    } else if (mounted) {
+      // Show error snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Login failed'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -198,8 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
               // ─── Login button ───────────────────
               AppButton(
                 text: 'Sign in',
-                isLoading: _isLoading,
-                onPressed: _isFormValid ? _login : null,
+                isLoading: isLoading,
+                onPressed: _isFormValid && !isLoading ? _login : null,
               ),
 
               const SizedBox(height: AppSizes.xl),

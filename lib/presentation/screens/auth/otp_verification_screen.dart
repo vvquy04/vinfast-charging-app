@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -24,7 +26,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Timer? _timer;
   int _countdown = 60;
   bool _canResend = false;
-  bool _isLoading = false;
 
   String get _otp => _controllers.map((c) => c.text).join();
   bool get _isComplete => _otp.length == 4;
@@ -65,10 +66,28 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
   }
 
-  void _resendOtp() {
+  void _resendOtp() async {
     if (!_canResend) return;
-    // TODO: Call resend OTP API
-    _startTimer();
+    
+    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    if (phone == null) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.sendOtp(phone);
+    
+    if (success && mounted) {
+      _startTimer();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP sent successfully')),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Failed to resend OTP'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   void _onDigitChanged(int index, String value) {
@@ -88,24 +107,38 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  void _verify() {
+  void _verify() async {
     if (!_isComplete) return;
 
-    setState(() => _isLoading = true);
+    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    if (phone == null) return;
 
-    // TODO: Call verify OTP API
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        // Pass phone number to profile screen
-        final phone = ModalRoute.of(context)?.settings.arguments as String?;
-        Navigator.pushNamed(context, '/signup/profile', arguments: phone);
-      }
-    });
+    final authProvider = context.read<AuthProvider>();
+    final isNewUser = await authProvider.verifyOtp(phone, _otp);
+
+    if (isNewUser == true && mounted) {
+      Navigator.pushNamed(context, '/signup/profile', arguments: phone);
+    } else if (isNewUser == false && mounted) {
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Verification failed'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
     final phone =
         ModalRoute.of(context)?.settings.arguments as String? ?? '+84 ***';
 
@@ -245,8 +278,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               // ─── Continue button ────────────────
               AppButton(
                 text: 'Continue',
-                isLoading: _isLoading,
-                onPressed: _isComplete ? _verify : null,
+                isLoading: isLoading,
+                onPressed: _isComplete && !isLoading ? _verify : null,
               ),
 
               const SizedBox(height: AppSizes.xl),

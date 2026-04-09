@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -28,7 +30,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
   bool get _isFormValid =>
       _phoneController.text.trim().length >= 9 && _agreedToTerms;
 
-  void _continue() {
+  void _continue() async {
     final phone = _phoneController.text.trim();
 
     if (phone.length < 9) {
@@ -37,12 +39,26 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     }
     if (!_agreedToTerms) return;
 
-    final fullPhone = '+84$phone';
-    Navigator.pushNamed(context, '/signup/otp', arguments: fullPhone);
+    final formattedPhone = '0$phone';
+    final authProvider = context.read<AuthProvider>();
+    
+    final success = await authProvider.sendOtp(formattedPhone);
+    if (success && mounted) {
+      Navigator.pushNamed(context, '/signup/otp', arguments: formattedPhone);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Failed to send OTP'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -262,7 +278,8 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
               // ─── Continue button ────────────────
               AppButton(
                 text: 'Continue',
-                onPressed: _isFormValid ? _continue : null,
+                isLoading: isLoading,
+                onPressed: _isFormValid && !isLoading ? _continue : null,
               ),
 
               const SizedBox(height: AppSizes.xl),
