@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import 'core/utils/dio_client.dart';
+import 'data/services/auth_service.dart';
+import 'data/repositories/auth_repository.dart';
+import 'presentation/providers/auth_provider.dart';
 import 'core/constants/app_colors.dart';
 import 'presentation/screens/auth/splash_screen.dart';
 import 'presentation/screens/auth/walkthrough_screen.dart';
@@ -21,7 +27,21 @@ void main() {
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
-  runApp(const EVCPointApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) {
+            final dioClient = DioClient();
+            final authService = AuthService(dioClient);
+            final authRepository = AuthRepository(authService);
+            return AuthProvider(authRepository);
+          },
+        ),
+      ],
+      child: const EVCPointApp(),
+    ),
+  );
 }
 
 class EVCPointApp extends StatelessWidget {

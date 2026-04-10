@@ -22,7 +22,8 @@ class AuthRepository {
     final response = await _authService.verifyOtp(phoneNumber, otp);
     if (response['success'] == true && response['data'] != null) {
       final data = response['data'];
-      return data['isNewUser'] == true;
+      // Jackson in Spring Boot converts 'boolean isNewUser' to 'newUser' in JSON mapping automatically!
+      return data['isNewUser'] == true || data['newUser'] == true;
     } else {
       throw Exception(response['message'] ?? 'Failed to verify OTP');
     }
