@@ -26,7 +26,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     'VF 8',
     'VF 9',
     'VF Wild',
-    'Other',
+    'Khác',
   ];
 
   static const List<String> _connectors = [
@@ -132,7 +132,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
               // ─── Header ─────────────────────────
               const Text(
-                'Personalize your experience by adding a vehicle 🚗',
+                'Cá nhân hóa bằng cách thêm xe 🚗',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
@@ -143,7 +143,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               ),
               const SizedBox(height: AppSizes.sm),
               const Text(
-                "Your vehicle's info is used to determine compatible charging stations.",
+                "Thông tin xe của bạn được dùng để gợi ý các trạm sạc tương thích.",
                 style: TextStyle(
                   fontSize: 15,
                   color: AppColors.gray,
@@ -214,7 +214,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
               // ─── Vehicle Model ──────────────────
               const Text(
-                'Vehicle Model',
+                'Mẫu Xe',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -224,9 +224,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               const SizedBox(height: AppSizes.sm),
               _DropdownTile(
                 value: _selectedVehicle,
-                placeholder: 'Select your vehicle',
+                placeholder: 'Chọn mẫu xe của bạn',
                 onTap: () => _showPicker(
-                  'Select Vehicle Model',
+                  'Chọn Mẫu Xe',
                   _vehicles,
                   _selectedVehicle,
                   (v) => setState(() => _selectedVehicle = v),
@@ -237,7 +237,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
               // ─── Connector Type ─────────────────
               const Text(
-                'Connector Type',
+                'Loại Súng Sạc',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -247,9 +247,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               const SizedBox(height: AppSizes.sm),
               _DropdownTile(
                 value: _selectedConnector,
-                placeholder: 'Select connector type',
+                placeholder: 'Chọn loại súng sạc',
                 onTap: () => _showPicker(
-                  'Select Connector Type',
+                  'Chọn Loại Súng Sạc',
                   _connectors,
                   _selectedConnector,
                   (v) => setState(() => _selectedConnector = v),
@@ -263,7 +263,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 children: [
                   Expanded(
                     child: AppButton(
-                      text: 'Add Later',
+                      text: 'Thêm Sau',
                       style: AppButtonStyle.outlined,
                       onPressed: _addLater,
                     ),
@@ -271,7 +271,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                   const SizedBox(width: AppSizes.md),
                   Expanded(
                     child: AppButton(
-                      text: 'Add Vehicle',
+                      text: 'Thêm Xe',
                       onPressed:
                           _selectedVehicle != null ? _addVehicle : null,
                     ),

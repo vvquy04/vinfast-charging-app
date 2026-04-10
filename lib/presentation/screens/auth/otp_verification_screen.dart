@@ -159,7 +159,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
               // ─── Header ─────────────────────────
               const Text(
-                'OTP code verification 📧',
+                'Xác nhận mã OTP 📧',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -168,12 +168,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 ),
               ),
               const SizedBox(height: AppSizes.sm),
-              Text(
-                'We have sent an OTP code to phone number $phone. Enter the OTP code below to continue.',
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.gray,
-                  height: 1.5,
+              Text.rich(
+                TextSpan(
+                  text: 'Chúng tôi đã gửi mã OTP tới số ',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.gray,
+                    height: 1.5,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: phone,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.black,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: '.\nNhập mã OTP vào bên dưới để tiếp tục.',
+                    ),
+                  ],
                 ),
               ),
 
@@ -253,19 +267,29 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               // ─── Resend ─────────────────────────
               Center(
                 child: _canResend
-                    ? GestureDetector(
-                        onTap: _resendOtp,
-                        child: const Text(
-                          "Didn't receive code? Resend",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.black,
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Chưa nhận được mã? ",
+                            style:
+                                TextStyle(fontSize: 14, color: AppColors.gray),
                           ),
-                        ),
+                          GestureDetector(
+                            onTap: _resendOtp,
+                            child: const Text(
+                              'Gửi lại',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.gray,
+                              ),
+                            ),
+                          ),
+                        ],
                       )
                     : Text(
-                        'You can resend code in ${_countdown}s',
+                        'Bạn có thể gửi lại mã sau ${_countdown}s',
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.gray,
@@ -277,7 +301,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
               // ─── Continue button ────────────────
               AppButton(
-                text: 'Continue',
+                text: 'Tiếp tục',
                 isLoading: isLoading,
                 onPressed: _isComplete && !isLoading ? _verify : null,
               ),

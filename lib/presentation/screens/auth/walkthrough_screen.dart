@@ -22,23 +22,23 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     _PageData(
       icon: Icons.location_on_rounded,
       decorIcon: Icons.map_rounded,
-      title: 'Find nearby charging\nstations',
+      title: 'Tìm trạm sạc điện\ngần bạn',
       subtitle:
-          'Easily locate EV charging stations around you with real-time availability and distance information.',
+          'Dễ dàng xác định vị trí trạm sạc xung quanh bạn với thông tin khoảng cách và tình trạng thực.',
     ),
     _PageData(
       icon: Icons.bolt_rounded,
       decorIcon: Icons.battery_charging_full_rounded,
-      title: 'Smart charging\nexperience',
+      title: 'Trải nghiệm sạc\nthông minh',
       subtitle:
-          'Get personalized recommendations based on your vehicle model and preferred connector type.',
+          'Nhận đề xuất cá nhân hóa dựa trên mẫu xe và loại súng sạc ưu tiên của bạn.',
     ),
     _PageData(
       icon: Icons.star_rounded,
       decorIcon: Icons.people_rounded,
-      title: 'Community reviews\n& ratings',
+      title: 'Đánh giá & chia sẻ\ntừ cộng đồng',
       subtitle:
-          'Read reviews from other EV owners and share your own charging station experience.',
+          'Đọc đánh giá từ những người dùng EV khác và chia sẻ kinh nghiệm sạc của riêng bạn.',
     ),
   ];
 
@@ -143,7 +143,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                 children: [
                   Expanded(
                     child: AppButton(
-                      text: 'Skip',
+                      text: 'Bỏ qua',
                       style: AppButtonStyle.text,
                       onPressed: _goToLogin,
                     ),
@@ -152,8 +152,8 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                   Expanded(
                     child: AppButton(
                       text: _currentPage == _pages.length - 1
-                          ? 'Get Started'
-                          : 'Next',
+                          ? 'Bắt đầu'
+                          : 'Tiếp theo',
                       onPressed: _next,
                     ),
                   ),

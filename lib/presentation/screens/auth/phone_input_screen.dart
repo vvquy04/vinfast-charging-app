@@ -34,7 +34,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     final phone = _phoneController.text.trim();
 
     if (phone.length < 9) {
-      setState(() => _phoneError = 'Please enter a valid phone number');
+      setState(() => _phoneError = 'Vui lòng nhập số điện thoại hợp lệ');
       return;
     }
     if (!_agreedToTerms) return;
@@ -48,7 +48,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Failed to send OTP'),
+          content: Text(authProvider.errorMessage ?? 'Gửi mã OTP thất bại'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -76,7 +76,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
 
               // ─── Header ─────────────────────────
               const Text(
-                'Hello there 👋',
+                'Xin chào 👋',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -86,7 +86,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
               ),
               const SizedBox(height: AppSizes.sm),
               const Text(
-                'Please enter your phone number. You will receive an OTP code in the next step for the verification process.',
+                'Vui lòng nhập số điện thoại. Bạn sẽ nhận được mã OTP ở bước tiếp theo để xác thực.',
                 style: TextStyle(
                   fontSize: 15,
                   color: AppColors.gray,
@@ -98,7 +98,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
 
               // ─── Label ──────────────────────────
               const Text(
-                'Phone Number',
+                'Số điện thoại',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -234,37 +234,41 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                     Expanded(
                       child: Text.rich(
                         TextSpan(
-                          text: 'I agree to EVCPoint ',
                           style: const TextStyle(
                             fontSize: 13,
-                            color: AppColors.gray,
                             height: 1.4,
                           ),
                           children: [
-                            TextSpan(
-                              text: 'Public Agreement',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.black,
-                                decoration: TextDecoration.underline,
-                                decorationColor:
-                                    AppColors.black.withOpacity(0.4),
-                              ),
+                            const TextSpan(
+                              text: 'Tôi đồng ý với ',
+                              style: TextStyle(color: AppColors.gray),
                             ),
-                            const TextSpan(text: ', '),
                             TextSpan(
-                              text: 'Terms',
+                              text: 'Thỏa thuận sử dụng',
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
                                 color: AppColors.black,
+                                fontWeight: FontWeight.w600,
                                 decoration: TextDecoration.underline,
-                                decorationColor:
-                                    AppColors.black.withOpacity(0.4),
+                                decorationColor: AppColors.black.withOpacity(0.4),
                               ),
                             ),
                             const TextSpan(
-                                text:
-                                    ', and confirm that I am over 17 years old.'),
+                              text: ',\n',
+                              style: TextStyle(color: AppColors.gray),
+                            ),
+                            TextSpan(
+                              text: 'Điều khoản',
+                              style: TextStyle(
+                                color: AppColors.black,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                                decorationColor: AppColors.black.withOpacity(0.4),
+                              ),
+                            ),
+                            const TextSpan(
+                              text: ', và xác nhận tôi trên 17 tuổi.',
+                              style: TextStyle(color: AppColors.gray),
+                            ),
                           ],
                         ),
                       ),
@@ -277,7 +281,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
 
               // ─── Continue button ────────────────
               AppButton(
-                text: 'Continue',
+                text: 'Tiếp tục',
                 isLoading: isLoading,
                 onPressed: _isFormValid && !isLoading ? _continue : null,
               ),

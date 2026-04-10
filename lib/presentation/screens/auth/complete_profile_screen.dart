@@ -35,7 +35,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   String? _passwordError;
   String? _confirmError;
 
-  static const List<String> _genders = ['Male', 'Female', 'Other'];
+  static const List<String> _genders = ['Nam', 'Nữ', 'Khác'];
 
   @override
   void dispose() {
@@ -75,7 +75,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 ),
                 const SizedBox(height: AppSizes.lg),
                 const Text(
-                  'Select Gender',
+                  'Chọn Giới Tính',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -175,7 +175,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final phone = ModalRoute.of(context)?.settings.arguments as String?;
     if (phone == null) {
        ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Phone number not found in session')),
+        const SnackBar(content: Text('Không tìm thấy số điện thoại của phiên đăng ký này')),
       );
       return;
     }
@@ -193,7 +193,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Registration failed'),
+          content: Text(authProvider.errorMessage ?? 'Đăng ký thất bại'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -231,7 +231,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                     // ─── Header ───────────────────
                     const Text(
-                      'Complete your profile 📋',
+                      'Hoàn thiện hồ sơ 📋',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
@@ -241,7 +241,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.sm),
                     const Text(
-                      "Don't worry, only you can see your personal data. No one else will be able to see it.",
+                      "Đừng lo, chỉ có bạn mới thấy được những dữ liệu cá nhân này.",
                       style: TextStyle(
                         fontSize: 15,
                         color: AppColors.gray,
@@ -302,8 +302,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                     // ─── Full Name ────────────────
                     AppTextField(
-                      label: 'Full Name',
-                      hint: 'Enter your full name',
+                      label: 'Họ và tên',
+                      hint: 'Nhập họ tên của bạn',
                       controller: _nameController,
                       textInputAction: TextInputAction.next,
                       errorText: _nameError,
@@ -315,7 +315,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     // ─── Email ────────────────────
                     AppTextField(
                       label: 'Email',
-                      hint: 'you@example.com (optional)',
+                      hint: 'vidu@gmail.com (tùy chọn)',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
@@ -327,8 +327,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                     // ─── Password ─────────────────
                     AppTextField(
-                      label: 'Password',
-                      hint: 'At least 6 characters',
+                      label: 'Mật khẩu',
+                      hint: 'Ít nhất 6 ký tự',
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       errorText: _passwordError,
@@ -351,8 +351,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                     // ─── Confirm Password ─────────
                     AppTextField(
-                      label: 'Confirm Password',
-                      hint: 'Re-enter your password',
+                      label: 'Xác nhận Mật khẩu',
+                      hint: 'Nhập lại mật khẩu',
                       controller: _confirmPasswordController,
                       obscureText: _obscureConfirm,
                       errorText: _confirmError,
@@ -375,7 +375,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                     // ─── Gender ───────────────────
                     const Text(
-                      'Gender',
+                      'Giới tính',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -400,7 +400,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                _selectedGender ?? 'Select gender',
+                                _selectedGender ?? 'Chọn giới tính',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: _selectedGender != null
@@ -422,7 +422,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                     // ─── Date of Birth ────────────
                     const Text(
-                      'Date of Birth',
+                      'Ngày sinh',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -472,7 +472,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                     // ─── Continue button ──────────
                     AppButton(
-                      text: 'Continue',
+                      text: 'Tiếp tục',
                       isLoading: isLoading,
                       onPressed: _isFormValid && !isLoading ? _continue : null,
                     ),

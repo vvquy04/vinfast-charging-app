@@ -27,7 +27,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               // ─── Title ──────────────────────────
               const Text(
-                "Let's you in",
+                "Đăng nhập hệ thống",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -40,7 +40,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               // ─── Social buttons ─────────────────
               AppSocialButton(
-                text: 'Continue with Google',
+                text: 'Tiếp tục với Google',
                 icon: _socialIcon('G', const Color(0xFFDB4437)),
                 onPressed: () {
                   // TODO: Implement Google sign-in
@@ -48,7 +48,7 @@ class LoginOptionsScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.md),
               AppSocialButton(
-                text: 'Continue with Facebook',
+                text: 'Tiếp tục với Facebook',
                 icon: _socialIcon('f', const Color(0xFF4267B2)),
                 onPressed: () {
                   // TODO: Implement Facebook sign-in
@@ -56,7 +56,7 @@ class LoginOptionsScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.md),
               AppSocialButton(
-                text: 'Continue with Apple',
+                text: 'Tiếp tục với Apple',
                 icon: const Icon(Icons.apple, size: 24, color: AppColors.black),
                 onPressed: () {
                   // TODO: Implement Apple sign-in
@@ -72,7 +72,7 @@ class LoginOptionsScreen extends StatelessWidget {
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: AppSizes.md),
                     child: Text(
-                      'or',
+                      'hoặc',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.gray,
@@ -88,7 +88,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               // ─── Sign In button ─────────────────
               AppButton(
-                text: 'Sign in',
+                text: 'Đăng nhập',
                 icon: Icons.login_rounded,
                 onPressed: () => Navigator.pushNamed(context, '/login'),
               ),
@@ -100,14 +100,14 @@ class LoginOptionsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    "Don't have an account?  ",
+                    "Chưa có tài khoản?  ",
                     style: TextStyle(fontSize: 14, color: AppColors.gray),
                   ),
                   GestureDetector(
                     onTap: () =>
                         Navigator.pushNamed(context, '/signup/phone'),
                     child: const Text(
-                      'Sign up',
+                      'Đăng ký',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,

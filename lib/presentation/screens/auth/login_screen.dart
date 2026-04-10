@@ -94,9 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: AppSizes.xl),
 
-              // ─── Header ─────────────────────────
+              // ─── Phone Input ────────────────────
               const Text(
-                'Welcome back 👋',
+                'Số điện thoại',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: AppSizes.sm),
               const Text(
-                'Enter your phone number and password to sign in to your account.',
+                'Nhập số điện thoại và mật khẩu để đăng nhập vào tài khoản của bạn.',
                 style: TextStyle(
                   fontSize: 15,
                   color: AppColors.gray,
@@ -199,30 +199,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: AppSizes.lg),
 
-              // ─── Login button ───────────────────
+              // ─── Sign In button ─────────────────
               AppButton(
-                text: 'Sign in',
+                text: 'Đăng nhập',
                 isLoading: isLoading,
                 onPressed: _isFormValid && !isLoading ? _login : null,
               ),
 
               const SizedBox(height: AppSizes.xl),
 
-              // ─── Sign up link ───────────────────
+              // ─── Sign Up link ───────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    "Don't have an account?  ",
+                    "Chưa có tài khoản?  ",
                     style: TextStyle(fontSize: 14, color: AppColors.gray),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context); // back to options
-                      Navigator.pushNamed(context, '/signup/phone');
-                    },
+                    onTap: () => Navigator.pushReplacementNamed(
+                        context, '/login-options'),
                     child: const Text(
-                      'Sign up',
+                      'Đăng ký',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
