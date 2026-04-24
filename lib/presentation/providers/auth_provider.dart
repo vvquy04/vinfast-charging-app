@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -78,6 +79,11 @@ class AuthProvider with ChangeNotifier {
     required String password,
     required String fullName,
     String? email,
+    String? gender,
+    String? dateOfBirth,
+    String? avatarUrl,
+    String? vehicleModel,
+    String? connectorType,
   }) async {
     _setLoading(true);
     _setError(null);
@@ -87,6 +93,11 @@ class AuthProvider with ChangeNotifier {
         password: password,
         fullName: fullName,
         email: email,
+        gender: gender,
+        dateOfBirth: dateOfBirth,
+        avatarUrl: avatarUrl,
+        vehicleModel: vehicleModel,
+        connectorType: connectorType,
       );
       _currentUser = user;
       _setLoading(false);
@@ -95,6 +106,18 @@ class AuthProvider with ChangeNotifier {
       _setLoading(false);
       _setError(e.toString().replaceAll('Exception: ', ''));
       return false;
+    }
+  }
+
+  Future<String> uploadAvatar({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    try {
+      return await _repository.uploadAvatar(bytes: bytes, fileName: fileName);
+    } catch (e) {
+      _setError(e.toString().replaceAll('Exception: ', ''));
+      rethrow;
     }
   }
 

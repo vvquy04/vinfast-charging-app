@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../../core/utils/validators.dart';
@@ -28,6 +31,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   bool _obscureConfirm = true;
   String? _selectedGender;
   DateTime? _selectedDate;
+  Uint8List? _avatarBytes;
+  String? _avatarUrl;
 
   // Errors
   String? _nameError;
@@ -83,26 +88,30 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.md),
-                ..._genders.map((g) => ListTile(
-                      title: Text(
-                        g,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: _selectedGender == g
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: AppColors.black,
-                        ),
+                ..._genders.map(
+                  (g) => ListTile(
+                    title: Text(
+                      g,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: _selectedGender == g
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: AppColors.black,
                       ),
-                      trailing: _selectedGender == g
-                          ? const Icon(Icons.check_rounded,
-                              color: AppColors.black)
-                          : null,
-                      onTap: () {
-                        setState(() => _selectedGender = g);
-                        Navigator.pop(context);
-                      },
-                    )),
+                    ),
+                    trailing: _selectedGender == g
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: AppColors.black,
+                          )
+                        : null,
+                    onTap: () {
+                      setState(() => _selectedGender = g);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -137,6 +146,54 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
   }
 
+  Future<void> _pickAvatar() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return;
+      }
+
+      final file = result.files.single;
+      final bytes = file.bytes;
+      if (bytes == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể đọc ảnh đã chọn')),
+        );
+        return;
+      }
+
+      final extension = file.extension?.toLowerCase();
+      final fileName = file.name.isNotEmpty
+          ? file.name
+          : 'avatar${extension != null && extension.isNotEmpty ? '.${extension}' : '.jpg'}';
+
+      setState(() {
+        _avatarBytes = bytes;
+      });
+
+      final authProvider = context.read<AuthProvider>();
+      final uploadedUrl = await authProvider.uploadAvatar(
+        bytes: bytes,
+        fileName: fileName,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _avatarUrl = uploadedUrl;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chọn hoặc tải ảnh lên thất bại')),
+      );
+    }
+  }
+
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
@@ -165,37 +222,53 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final passError = Validators.validatePassword(password);
     if (passError != null) setState(() => _passwordError = passError);
 
-    final confirmPassError = Validators.validateConfirmPassword(confirm, password);
-    if (confirmPassError != null) setState(() => _confirmError = confirmPassError);
+    final confirmPassError = Validators.validateConfirmPassword(
+      confirm,
+      password,
+    );
+    if (confirmPassError != null)
+      setState(() => _confirmError = confirmPassError);
 
-    if (_nameError != null || _emailError != null || _passwordError != null || _confirmError != null) {
+    if (_nameError != null ||
+        _emailError != null ||
+        _passwordError != null ||
+        _confirmError != null) {
       return;
     }
 
     final phone = ModalRoute.of(context)?.settings.arguments as String?;
     if (phone == null) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không tìm thấy số điện thoại của phiên đăng ký này')),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không tìm thấy số điện thoại của phiên đăng ký này'),
+        ),
       );
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.register(
-      phoneNumber: phone,
-      password: password,
-      fullName: name,
-      email: email.isNotEmpty ? email : null,
-    );
+    final registrationData = {
+      'phoneNumber': phone,
+      'password': password,
+      'fullName': name,
+      'email': email.isNotEmpty ? email : null,
+      'gender': _selectedGender == 'Nam'
+          ? 'MALE'
+          : _selectedGender == 'Nữ'
+          ? 'FEMALE'
+          : _selectedGender == 'Khác'
+          ? 'OTHER'
+          : null,
+      'dateOfBirth': _selectedDate != null
+          ? "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}"
+          : null,
+      'avatarUrl': _avatarUrl,
+    };
 
-    if (success && mounted) {
-      Navigator.pushNamed(context, '/signup/vehicle');
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Đăng ký thất bại'),
-          backgroundColor: AppColors.error,
-        ),
+    if (mounted) {
+      Navigator.pushNamed(
+        context,
+        '/signup/vehicle',
+        arguments: registrationData,
       );
     }
   }
@@ -212,11 +285,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             // ─── Top bar ──────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSizes.lg, AppSizes.md, AppSizes.lg, 0),
+                AppSizes.lg,
+                AppSizes.md,
+                AppSizes.lg,
+                0,
+              ),
               child: Row(
-                children: [
-                  _BackButton(onTap: () => Navigator.pop(context)),
-                ],
+                children: [_BackButton(onTap: () => Navigator.pop(context))],
               ),
             ),
 
@@ -262,21 +337,30 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               color: AppColors.smoke,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                  color: AppColors.silver, width: 2),
+                                color: AppColors.silver,
+                                width: 2,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              size: 48,
-                              color: AppColors.lightGray,
+                            child: ClipOval(
+                              child: _avatarBytes != null
+                                  ? Image.memory(
+                                      _avatarBytes!,
+                                      fit: BoxFit.cover,
+                                      width: 100,
+                                      height: 100,
+                                    )
+                                  : const Icon(
+                                      Icons.person_rounded,
+                                      size: 48,
+                                      color: AppColors.lightGray,
+                                    ),
                             ),
                           ),
                           Positioned(
                             bottom: 0,
                             right: 0,
                             child: GestureDetector(
-                              onTap: () {
-                                // TODO: Pick avatar image
-                              },
+                              onTap: _pickAvatar,
                               child: Container(
                                 width: 34,
                                 height: 34,
@@ -284,7 +368,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   color: AppColors.black,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                      color: AppColors.white, width: 2),
+                                    color: AppColors.white,
+                                    width: 2,
+                                  ),
                                 ),
                                 child: const Icon(
                                   Icons.camera_alt_rounded,
@@ -334,7 +420,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       errorText: _passwordError,
                       suffixIcon: GestureDetector(
                         onTap: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                         child: Icon(
                           _obscurePassword
                               ? Icons.visibility_off_outlined
@@ -343,8 +430,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           size: 20,
                         ),
                       ),
-                      onChanged: (_) =>
-                          setState(() => _passwordError = null),
+                      onChanged: (_) => setState(() => _passwordError = null),
                     ),
 
                     const SizedBox(height: AppSizes.lg),
@@ -357,8 +443,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       obscureText: _obscureConfirm,
                       errorText: _confirmError,
                       suffixIcon: GestureDetector(
-                        onTap: () => setState(
-                            () => _obscureConfirm = !_obscureConfirm),
+                        onTap: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
                         child: Icon(
                           _obscureConfirm
                               ? Icons.visibility_off_outlined
@@ -367,8 +453,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           size: 20,
                         ),
                       ),
-                      onChanged: (_) =>
-                          setState(() => _confirmError = null),
+                      onChanged: (_) => setState(() => _confirmError = null),
                     ),
 
                     const SizedBox(height: AppSizes.lg),
@@ -388,13 +473,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       child: Container(
                         height: AppSizes.inputHeight,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.md),
+                          horizontal: AppSizes.md,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.smoke,
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusMd),
-                          border:
-                              Border.all(color: AppColors.silver),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
+                          border: Border.all(color: AppColors.silver),
                         ),
                         child: Row(
                           children: [
@@ -435,13 +521,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       child: Container(
                         height: AppSizes.inputHeight,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.md),
+                          horizontal: AppSizes.md,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.smoke,
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusMd),
-                          border:
-                              Border.all(color: AppColors.silver),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
+                          border: Border.all(color: AppColors.silver),
                         ),
                         child: Row(
                           children: [

@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:typed_data';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -31,16 +32,16 @@ class AuthRepository {
 
   Future<UserModel> login(String phoneNumber, String password) async {
     final response = await _authService.login(phoneNumber, password);
-    
-    // Parse the standardized response: { "success": true, "data": { "token": "...", "user": {...} } }
+
+    // Parse the standardized response: { "success": true, "data": { ...AuthResponse fields..., "token": "..." } }
     if (response['success'] == true && response['data'] != null) {
       final data = response['data'];
       final token = data['token'] as String;
-      
+
       // Save token locally
       await saveToken(token);
-      
-      return UserModel.fromJson(data['user']);
+
+      return UserModel.fromJson(Map<String, dynamic>.from(data));
     } else {
       throw Exception(response['message'] ?? 'Unexpected login failure');
     }
@@ -51,24 +52,51 @@ class AuthRepository {
     required String password,
     required String fullName,
     String? email,
+    String? gender,
+    String? dateOfBirth,
+    String? avatarUrl,
+    String? vehicleModel,
+    String? connectorType,
   }) async {
     final response = await _authService.register(
       phoneNumber: phoneNumber,
       password: password,
       fullName: fullName,
       email: email,
+      gender: gender,
+      dateOfBirth: dateOfBirth,
+      avatarUrl: avatarUrl,
+      vehicleModel: vehicleModel,
+      connectorType: connectorType,
     );
 
     if (response['success'] == true && response['data'] != null) {
       final data = response['data'];
       final token = data['token'] as String;
-      
+
       await saveToken(token);
-      
-      return UserModel.fromJson(data['user']);
+
+      return UserModel.fromJson(Map<String, dynamic>.from(data));
     } else {
       throw Exception(response['message'] ?? 'Unexpected registration failure');
     }
+  }
+
+  Future<String> uploadAvatar({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    final response = await _authService.uploadAvatar(
+      bytes: bytes,
+      fileName: fileName,
+    );
+
+    if (response['success'] == true && response['data'] != null) {
+      final data = response['data'] as Map<String, dynamic>;
+      return data['url'] as String;
+    }
+
+    throw Exception(response['message'] ?? 'Unexpected avatar upload failure');
   }
 
   Future<void> saveToken(String token) async {
