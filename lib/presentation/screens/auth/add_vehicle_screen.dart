@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -36,16 +38,54 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     'DC',
   ];
 
+  void _executeRegistration(Map<String, dynamic> data) async {
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.register(
+      phoneNumber: data['phoneNumber'],
+      password: data['password'],
+      fullName: data['fullName'],
+      email: data['email'],
+      gender: data['gender'],
+      dateOfBirth: data['dateOfBirth'],
+      avatarUrl: data['avatarUrl'],
+      vehicleModel: _selectedVehicle,
+      connectorType: _selectedConnector,
+    );
+
+    if (success && mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Đăng ký thất bại'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _showMissingSelectionMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.error),
+    );
+  }
+
   void _addLater() {
-    // Navigate to home without vehicle info
-    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    final data =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (data == null) return;
+    _executeRegistration(data);
   }
 
   void _addVehicle() {
-    if (_selectedVehicle == null) return;
-
-    // TODO: Save vehicle info via API
-    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    if (_selectedVehicle == null || _selectedConnector == null) {
+      _showMissingSelectionMessage('Vui lòng chọn mẫu xe và loại súng sạc');
+      return;
+    }
+    final data =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (data == null) return;
+    _executeRegistration(data);
   }
 
   void _showPicker(
@@ -85,26 +125,30 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.md),
-                ...options.map((opt) => ListTile(
-                      title: Text(
-                        opt,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: current == opt
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: AppColors.black,
-                        ),
+                ...options.map(
+                  (opt) => ListTile(
+                    title: Text(
+                      opt,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: current == opt
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: AppColors.black,
                       ),
-                      trailing: current == opt
-                          ? const Icon(Icons.check_rounded,
-                              color: AppColors.black)
-                          : null,
-                      onTap: () {
-                        onSelect(opt);
-                        Navigator.pop(context);
-                      },
-                    )),
+                    ),
+                    trailing: current == opt
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: AppColors.black,
+                          )
+                        : null,
+                    onTap: () {
+                      onSelect(opt);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -115,6 +159,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -265,15 +311,21 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     child: AppButton(
                       text: 'Thêm Sau',
                       style: AppButtonStyle.outlined,
-                      onPressed: _addLater,
+                      isLoading: isLoading,
+                      onPressed: !isLoading ? _addLater : null,
                     ),
                   ),
                   const SizedBox(width: AppSizes.md),
                   Expanded(
                     child: AppButton(
                       text: 'Thêm Xe',
+                      isLoading: isLoading,
                       onPressed:
-                          _selectedVehicle != null ? _addVehicle : null,
+                          (_selectedVehicle != null &&
+                              _selectedConnector != null &&
+                              !isLoading)
+                          ? _addVehicle
+                          : null,
                     ),
                   ),
                 ],

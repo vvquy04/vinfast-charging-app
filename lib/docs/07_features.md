@@ -20,7 +20,7 @@
 
 | # | Tính năng | Mô tả | Ưu tiên |
 |---|-----------|-------|---------|
-| A1 | Đăng ký | Tạo tài khoản: email, mật khẩu, họ tên, SĐT, model xe, cổng sạc | 🔴 Cao |
+| A1 | Đăng ký | Tạo tài khoản: avatar, email, mật khẩu, họ tên, SĐT, model xe, cổng sạc | 🔴 Cao |
 | A2 | Đăng nhập | Đăng nhập bằng email + mật khẩu, nhận JWT token | 🔴 Cao |
 | A3 | Đăng xuất | Xoá token, quay về màn login | 🔴 Cao |
 | A4 | Lưu phiên đăng nhập | Tự đăng nhập lại khi mở app (token trong SharedPreferences) | 🟡 Trung bình |
@@ -65,8 +65,8 @@
 
 | # | Tính năng | Mô tả | Ưu tiên |
 |---|-----------|-------|---------|
-| P1 | Xem thông tin | Họ tên, email, SĐT, model xe, cổng sạc | 🟡 Trung bình |
-| P2 | Sửa thông tin | Cập nhật profile (trừ email) | 🟡 Trung bình |
+| P1 | Xem thông tin | Ảnh đại diện, Họ tên, email, SĐT, model xe, cổng sạc | 🟡 Trung bình |
+| P2 | Sửa thông tin | Cập nhật ảnh đại diện, Họ tên, SĐT, model xe, cổng sạc | 🟡 Trung bình |
 | P3 | Lịch sử xem trạm | Danh sách trạm đã xem gần đây | 🟢 Thấp |
 
 ---

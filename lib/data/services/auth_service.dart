@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import '../../core/utils/dio_client.dart';
 import '../models/user_model.dart';
@@ -30,10 +32,7 @@ class AuthService {
     try {
       final response = await _dioClient.dio.post(
         '/api/auth/verify-otp',
-        data: {
-          'phoneNumber': phoneNumber,
-          'otp': otp,
-        },
+        data: {'phoneNumber': phoneNumber, 'otp': otp},
       );
       return response.data;
     } on DioException catch (e) {
@@ -46,14 +45,14 @@ class AuthService {
   }
 
   /// POST /api/auth/login
-  Future<Map<String, dynamic>> login(String phoneNumber, String password) async {
+  Future<Map<String, dynamic>> login(
+    String phoneNumber,
+    String password,
+  ) async {
     try {
       final response = await _dioClient.dio.post(
         '/api/auth/login',
-        data: {
-          'phoneNumber': phoneNumber,
-          'password': password,
-        },
+        data: {'phoneNumber': phoneNumber, 'password': password},
       );
       return response.data;
     } on DioException catch (e) {
@@ -71,6 +70,11 @@ class AuthService {
     required String password,
     required String fullName,
     String? email,
+    String? gender,
+    String? dateOfBirth,
+    String? avatarUrl,
+    String? vehicleModel,
+    String? connectorType,
   }) async {
     try {
       final response = await _dioClient.dio.post(
@@ -80,12 +84,43 @@ class AuthService {
           'password': password,
           'fullName': fullName,
           'email': email,
+          'gender': gender,
+          'dateOfBirth': dateOfBirth,
+          'avatarUrl': avatarUrl,
+          'vehicleModel': vehicleModel,
+          'connectorType': connectorType,
         },
       );
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
         throw Exception(e.response?.data['message'] ?? 'Registration failed');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
+
+  /// POST /api/uploads/avatar
+  Future<Map<String, dynamic>> uploadAvatar({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: fileName),
+      });
+
+      final response = await _dioClient.dio.post(
+        '/api/uploads/avatar',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Avatar upload failed');
       } else {
         throw Exception('Network error or server unreachable');
       }
