@@ -77,11 +77,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               GoogleMap(
                 mapType: MapType.normal,
                 initialCameraPosition: currentCamera,
-                myLocationEnabled: false, // We will use custom avatar marker later
+                myLocationEnabled: false,
                 myLocationButtonEnabled: false,
                 zoomControlsEnabled: false,
                 onMapCreated: _onMapCreated,
                 markers: _buildMarkers(provider),
+                polylines: provider.routePolylines,
               ),
 
               // ─── Top Search Bar Overlay ────────────────
@@ -115,7 +116,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     _FloatingButton(
                       icon: Icons.directions_rounded,
                       onTap: () {
-                        // TODO: Implement polyline routing
+                        if (provider.selectedStationDetail != null) {
+                          final detail = provider.selectedStationDetail!;
+                          final dest = LatLng(detail.latitude, detail.longitude);
+                          provider.drawRoute(dest);
+                          _zoomToFitRoute(provider, dest);
+                        }
                       },
                     ),
                   ],
@@ -174,6 +180,27 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     }
 
     return markers;
+  }
+
+  /// Zoom camera để vừa chứa cả user và trạm sạc đích
+  Future<void> _zoomToFitRoute(StationProvider provider, LatLng destination) async {
+    if (provider.currentPosition == null) return;
+    final userLatLng = LatLng(
+      provider.currentPosition!.latitude,
+      provider.currentPosition!.longitude,
+    );
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        userLatLng.latitude < destination.latitude ? userLatLng.latitude : destination.latitude,
+        userLatLng.longitude < destination.longitude ? userLatLng.longitude : destination.longitude,
+      ),
+      northeast: LatLng(
+        userLatLng.latitude > destination.latitude ? userLatLng.latitude : destination.latitude,
+        userLatLng.longitude > destination.longitude ? userLatLng.longitude : destination.longitude,
+      ),
+    );
+    final c = await _controller.future;
+    c.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
   Widget _buildSearchBar() {

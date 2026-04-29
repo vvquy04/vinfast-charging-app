@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import '../../core/constants/app_config.dart';
 import '../../data/models/station_summary_model.dart';
 import '../../data/models/station_detail_model.dart';
 import '../../data/repositories/station_repository.dart';
@@ -24,7 +27,14 @@ class StationProvider with ChangeNotifier {
 
   // Search logic variables
   double _radius = 10.0;
-  
+
+  // ─── Routing state ──────────────────────────────
+  Set<Polyline> _routePolylines = {};
+  Set<Polyline> get routePolylines => _routePolylines;
+
+  bool _isRouting = false;
+  bool get isRouting => _isRouting;
+
   StationProvider(this._repository) {
     _initLocation();
   }
@@ -123,6 +133,64 @@ class StationProvider with ChangeNotifier {
 
   void clearSelection() {
     _selectedStationDetail = null;
+    _routePolylines = {};
+    _isRouting = false;
+    notifyListeners();
+  }
+
+  // ─── Routing: vẽ đường đi đến trạm sạc ────────
+  Future<void> drawRoute(LatLng destination) async {
+    if (_currentPosition == null) return;
+
+    _isRouting = true;
+    notifyListeners();
+
+    try {
+      PolylinePoints polylinePoints = PolylinePoints();
+      PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+        googleApiKey: AppConfig.googleMapsApiKey,
+        request: PolylineRequest(
+          origin: PointLatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+          ),
+          destination: PointLatLng(
+            destination.latitude,
+            destination.longitude,
+          ),
+          mode: TravelMode.driving,
+        ),
+      );
+
+      if (result.points.isNotEmpty) {
+        List<LatLng> polyCoords = result.points
+            .map((point) => LatLng(point.latitude, point.longitude))
+            .toList();
+
+        _routePolylines = {
+          Polyline(
+            polylineId: const PolylineId('route_to_station'),
+            color: const Color(0xFF1A1A2E),
+            width: 5,
+            points: polyCoords,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        };
+      } else {
+        _errorMessage = result.errorMessage ?? 'Không tìm được đường đi';
+      }
+    } catch (e) {
+      _errorMessage = 'Lỗi khi tìm đường: ${e.toString()}';
+    } finally {
+      _isRouting = false;
+      notifyListeners();
+    }
+  }
+
+  void clearRoute() {
+    _routePolylines = {};
+    _isRouting = false;
     notifyListeners();
   }
 }
