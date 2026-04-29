@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'home_map_screen.dart';
+import '../history/history_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,7 +15,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<Widget> _pages = [
     const HomeMapScreen(),
-    const Center(child: Text('Saved Stations (Coming soon)')),
+    const HistoryScreen(),
     const Center(child: Text('My Booking (Coming soon)')),
     const Center(child: Text('My Wallet (Coming soon)')),
     const Center(child: Text('Account (Coming soon)')),
@@ -48,9 +49,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_border_rounded),
-            activeIcon: Icon(Icons.bookmark_rounded),
-            label: 'Saved',
+            icon: Icon(Icons.history_rounded),
+            activeIcon: Icon(Icons.history_toggle_off_rounded),
+            label: 'History',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.check_circle_outline_rounded),

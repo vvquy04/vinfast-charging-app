@@ -9,6 +9,9 @@ import 'data/repositories/auth_repository.dart';
 import 'data/repositories/station_repository.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/station_provider.dart';
+import 'presentation/providers/history_provider.dart';
+import 'data/services/history_service.dart';
+import 'data/repositories/history_repository.dart';
 import 'core/constants/app_colors.dart';
 import 'presentation/screens/auth/splash_screen.dart';
 import 'presentation/screens/auth/walkthrough_screen.dart';
@@ -49,6 +52,14 @@ void main() {
             final stationService = StationService(dioClient);
             final stationRepo = StationRepository(stationService);
             return StationProvider(stationRepo);
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final dioClient = DioClient();
+            final historyService = HistoryService(dioClient);
+            final historyRepo = HistoryRepository(historyService);
+            return HistoryProvider(historyRepo);
           },
         ),
       ],

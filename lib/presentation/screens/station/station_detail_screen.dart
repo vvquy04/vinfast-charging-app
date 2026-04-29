@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/station_provider.dart';
+import '../../providers/history_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 
-class StationDetailScreen extends StatelessWidget {
+class StationDetailScreen extends StatefulWidget {
   const StationDetailScreen({super.key});
+
+  @override
+  State<StationDetailScreen> createState() => _StationDetailScreenState();
+}
+
+class _StationDetailScreenState extends State<StationDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final stationProvider = context.read<StationProvider>();
+      final detail = stationProvider.selectedStationDetail;
+      if (detail != null) {
+        context.read<HistoryProvider>().recordVisit(detail.stationId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
