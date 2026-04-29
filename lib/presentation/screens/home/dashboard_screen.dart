@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'home_map_screen.dart';
+import '../profile/profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,7 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const Center(child: Text('Saved Stations (Coming soon)')),
     const Center(child: Text('My Booking (Coming soon)')),
     const Center(child: Text('My Wallet (Coming soon)')),
-    const Center(child: Text('Account (Coming soon)')),
+    const ProfileScreen(),
   ];
 
   @override

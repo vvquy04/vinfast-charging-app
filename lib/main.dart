@@ -9,6 +9,10 @@ import 'data/repositories/auth_repository.dart';
 import 'data/repositories/station_repository.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/station_provider.dart';
+import 'presentation/providers/profile_provider.dart';
+import 'data/services/user_service.dart';
+import 'data/services/upload_service.dart';
+import 'data/repositories/user_repository.dart';
 import 'core/constants/app_colors.dart';
 import 'presentation/screens/auth/splash_screen.dart';
 import 'presentation/screens/auth/walkthrough_screen.dart';
@@ -49,6 +53,15 @@ void main() {
             final stationService = StationService(dioClient);
             final stationRepo = StationRepository(stationService);
             return StationProvider(stationRepo);
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final dioClient = DioClient();
+            final userService = UserService(dioClient);
+            final uploadService = UploadService(dioClient);
+            final userRepo = UserRepository(userService, uploadService);
+            return ProfileProvider(userRepo);
           },
         ),
       ],
