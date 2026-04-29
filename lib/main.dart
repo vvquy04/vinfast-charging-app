@@ -4,8 +4,11 @@ import 'package:provider/provider.dart';
 
 import 'core/utils/dio_client.dart';
 import 'data/services/auth_service.dart';
+import 'data/services/station_service.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/station_repository.dart';
 import 'presentation/providers/auth_provider.dart';
+import 'presentation/providers/station_provider.dart';
 import 'core/constants/app_colors.dart';
 import 'presentation/screens/auth/splash_screen.dart';
 import 'presentation/screens/auth/walkthrough_screen.dart';
@@ -15,6 +18,8 @@ import 'presentation/screens/auth/phone_input_screen.dart';
 import 'presentation/screens/auth/otp_verification_screen.dart';
 import 'presentation/screens/auth/complete_profile_screen.dart';
 import 'presentation/screens/auth/add_vehicle_screen.dart';
+import 'presentation/screens/home/dashboard_screen.dart';
+import 'presentation/screens/station/station_detail_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +41,14 @@ void main() {
             final authService = AuthService(dioClient);
             final authRepository = AuthRepository(authService);
             return AuthProvider(authRepository);
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final dioClient = DioClient();
+            final stationService = StationService(dioClient);
+            final stationRepo = StationRepository(stationService);
+            return StationProvider(stationRepo);
           },
         ),
       ],
@@ -88,57 +101,9 @@ class EVCPointApp extends StatelessWidget {
         '/signup/profile': (context) => const CompleteProfileScreen(),
         '/signup/vehicle': (context) => const AddVehicleScreen(),
         // TODO: Add home screen route
-        '/home': (context) => const _PlaceholderHome(),
+        '/home': (context) => const DashboardScreen(),
+        '/station_detail': (context) => const StationDetailScreen(),
       },
-    );
-  }
-}
-
-/// Temporary placeholder home screen.
-class _PlaceholderHome extends StatelessWidget {
-  const _PlaceholderHome();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.black,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                color: AppColors.white,
-                size: 40,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'EVCPoint',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: AppColors.black,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Welcome! Home screen coming soon.',
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.gray,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

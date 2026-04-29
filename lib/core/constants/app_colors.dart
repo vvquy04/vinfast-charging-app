@@ -15,6 +15,7 @@ class AppColors {
   static const Color white = Color(0xFFFFFFFF);
 
   // ─── Accent (chỉ dùng cho trạng thái) ──────────
+  static const Color primary = Color(0xFF00C853); // Bright Green
   static const Color error = Color(0xFFE53935);
   static const Color success = Color(0xFF43A047);
 
