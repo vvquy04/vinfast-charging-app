@@ -66,10 +66,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
   }
 
+  String? _getPhone(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is String) return args;
+    if (args is Map<String, dynamic>) return args['phone'] as String?;
+    return null;
+  }
+
   void _resendOtp() async {
     if (!_canResend) return;
     
-    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    final phone = _getPhone(context);
     if (phone == null) return;
 
     final authProvider = context.read<AuthProvider>();
@@ -110,14 +117,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _verify() async {
     if (!_isComplete) return;
 
-    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final phone = _getPhone(context);
     if (phone == null) return;
 
     final authProvider = context.read<AuthProvider>();
     final isNewUser = await authProvider.verifyOtp(phone, _otp);
 
     if (isNewUser == true && mounted) {
-      Navigator.pushNamed(context, '/signup/profile', arguments: phone);
+      Navigator.pushNamed(context, '/signup/profile', arguments: args);
     } else if (isNewUser == false && mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -139,8 +147,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthProvider>().isLoading;
-    final phone =
-        ModalRoute.of(context)?.settings.arguments as String? ?? '+84 ***';
+    final phone = _getPhone(context) ?? '+84 ***';
 
     return Scaffold(
       backgroundColor: AppColors.white,

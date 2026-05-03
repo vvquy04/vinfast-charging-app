@@ -19,6 +19,7 @@ import 'presentation/screens/auth/login_options_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/auth/phone_input_screen.dart';
 import 'presentation/screens/auth/otp_verification_screen.dart';
+import 'presentation/screens/auth/oauth2_phone_input_screen.dart';
 import 'presentation/screens/auth/complete_profile_screen.dart';
 import 'presentation/screens/auth/add_vehicle_screen.dart';
 import 'presentation/screens/home/dashboard_screen.dart';
@@ -111,6 +112,8 @@ class EVCPointApp extends StatelessWidget {
         '/signup/otp': (context) => const OtpVerificationScreen(),
         '/signup/profile': (context) => const CompleteProfileScreen(),
         '/signup/vehicle': (context) => const AddVehicleScreen(),
+        '/oauth2/phone': (context) => const OAuth2PhoneInputScreen(),
+        '/oauth2/otp': (context) => const OtpVerificationScreen(),
         // TODO: Add home screen route
         '/home': (context) => const DashboardScreen(),
         '/station_detail': (context) => const StationDetailScreen(),

@@ -47,6 +47,36 @@ class AuthRepository {
     }
   }
 
+  /// Gọi API loginWithGoogle
+  /// Trả về một Map chứa:
+  /// - 'isNewUser': true/false
+  /// - 'user': UserModel (nếu isNewUser = false)
+  /// - 'googleData': Map chứa email, name, avatarUrl (nếu isNewUser = true)
+  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
+    final response = await _authService.loginWithGoogle(idToken);
+    final statusCode = response['statusCode'];
+    final body = response['data'];
+
+    if (statusCode == 200 && body['success'] == true && body['data'] != null) {
+      // Đăng nhập thành công, đã có tài khoản
+      final data = body['data'];
+      final token = data['token'] as String;
+      await saveToken(token);
+      return {
+        'isNewUser': false,
+        'user': UserModel.fromJson(Map<String, dynamic>.from(data)),
+      };
+    } else if (statusCode == 202 && body['success'] == true && body['data'] != null) {
+      // Chưa có tài khoản, yêu cầu SĐT
+      return {
+        'isNewUser': true,
+        'googleData': body['data'],
+      };
+    } else {
+      throw Exception(body['message'] ?? 'Google login failed');
+    }
+  }
+
   Future<UserModel> register({
     required String phoneNumber,
     required String password,
@@ -112,5 +142,23 @@ class AuthRepository {
   Future<bool> hasToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.containsKey(_tokenKey);
+  }
+
+  /// GET /api/users/me — Tải thông tin profile
+  Future<UserModel> getProfile() async {
+    final response = await _authService.getProfile();
+    if (response['success'] == true && response['data'] != null) {
+      return UserModel.fromJson(Map<String, dynamic>.from(response['data']));
+    }
+    throw Exception(response['message'] ?? 'Failed to load profile');
+  }
+
+  /// PUT /api/users/me — Cập nhật thông tin profile
+  Future<UserModel> updateProfile(Map<String, dynamic> data) async {
+    final response = await _authService.updateProfile(data);
+    if (response['success'] == true && response['data'] != null) {
+      return UserModel.fromJson(Map<String, dynamic>.from(response['data']));
+    }
+    throw Exception(response['message'] ?? 'Failed to update profile');
   }
 }

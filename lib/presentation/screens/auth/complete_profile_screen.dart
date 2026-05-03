@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -40,7 +38,30 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   String? _passwordError;
   String? _confirmError;
 
+  bool _isInitialized = false;
+
   static const List<String> _genders = ['Nam', 'Nữ', 'Khác'];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic> && args['googleData'] != null) {
+        final googleData = args['googleData'];
+        if (googleData['fullName'] != null) {
+          _nameController.text = googleData['fullName'];
+        }
+        if (googleData['email'] != null) {
+          _emailController.text = googleData['email'];
+        }
+        if (googleData['avatarUrl'] != null) {
+          _avatarUrl = googleData['avatarUrl'];
+        }
+      }
+      _isInitialized = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -49,6 +70,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  String? _getPhone(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is String) return args;
+    if (args is Map<String, dynamic>) return args['phone'] as String?;
+    return null;
   }
 
   bool get _isFormValid =>
@@ -148,7 +176,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Future<void> _pickAvatar() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await (FilePicker as dynamic).platform.pickFiles(
         type: FileType.image,
         withData: true,
       );
@@ -170,12 +198,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       final extension = file.extension?.toLowerCase();
       final fileName = file.name.isNotEmpty
           ? file.name
-          : 'avatar${extension != null && extension.isNotEmpty ? '.${extension}' : '.jpg'}';
+          : 'avatar${extension != null && extension.isNotEmpty ? '.$extension' : '.jpg'}';
 
       setState(() {
         _avatarBytes = bytes;
       });
 
+      if (!mounted) return;
       final authProvider = context.read<AuthProvider>();
       final uploadedUrl = await authProvider.uploadAvatar(
         bytes: bytes,
@@ -226,8 +255,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       confirm,
       password,
     );
-    if (confirmPassError != null)
+    if (confirmPassError != null) {
       setState(() => _confirmError = confirmPassError);
+    }
 
     if (_nameError != null ||
         _emailError != null ||
@@ -236,7 +266,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       return;
     }
 
-    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    final phone = _getPhone(context);
     if (phone == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -349,11 +379,23 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                       width: 100,
                                       height: 100,
                                     )
-                                  : const Icon(
-                                      Icons.person_rounded,
-                                      size: 48,
-                                      color: AppColors.lightGray,
-                                    ),
+                                  : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                                      ? Image.network(
+                                          _avatarUrl!,
+                                          fit: BoxFit.cover,
+                                          width: 100,
+                                          height: 100,
+                                          errorBuilder: (context, error, stackTrace) => const Icon(
+                                            Icons.person_rounded,
+                                            size: 48,
+                                            color: AppColors.lightGray,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.person_rounded,
+                                          size: 48,
+                                          color: AppColors.lightGray,
+                                        ),
                             ),
                           ),
                           Positioned(

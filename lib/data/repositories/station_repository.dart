@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/station_summary_model.dart';
 import '../models/station_detail_model.dart';
+import '../models/review_model.dart';
 import '../services/station_service.dart';
 
 class StationRepository {
@@ -27,7 +28,6 @@ class StationRepository {
       );
 
       if (response.statusCode == 200) {
-        // ApiResponse<PageResponse<StationSummaryResponse>>
         final data = response.data['data']['content'] as List;
         return data.map((json) => StationSummaryModel.fromJson(json)).toList();
       }
@@ -44,6 +44,41 @@ class StationRepository {
         return StationDetailModel.fromJson(response.data['data']);
       }
       throw Exception(response.data['message'] ?? 'Failed to fetch station detail');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Network error');
+    }
+  }
+
+  Future<List<ReviewModel>> getReviews(int stationId, {int page = 0, int size = 10}) async {
+    try {
+      final response = await _stationService.getReviews(stationId, page: page, size: size);
+      if (response.statusCode == 200) {
+        final data = response.data['data']['content'] as List;
+        return data.map((json) => ReviewModel.fromJson(json)).toList();
+      }
+      throw Exception(response.data['message'] ?? 'Failed to fetch reviews');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Network error');
+    }
+  }
+
+  Future<void> createReview(int stationId, {required int rating, String? comment}) async {
+    try {
+      final response = await _stationService.createReview(stationId, rating: rating, comment: comment);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(response.data['message'] ?? 'Failed to create review');
+      }
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Network error');
+    }
+  }
+
+  Future<void> deleteReview(int stationId, int reviewId) async {
+    try {
+      final response = await _stationService.deleteReview(stationId, reviewId);
+      if (response.statusCode != 200) {
+        throw Exception(response.data['message'] ?? 'Failed to delete review');
+      }
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Network error');
     }

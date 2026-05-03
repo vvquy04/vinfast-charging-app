@@ -64,6 +64,27 @@ class AuthService {
     }
   }
 
+  /// POST /api/auth/oauth2/google
+  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/api/auth/oauth2/google',
+        data: {'idToken': idToken},
+      );
+      // Backend có thể trả về 200 OK (thành công) hoặc 202 Accepted (cần nhập sđt)
+      return {
+        'statusCode': response.statusCode,
+        'data': response.data,
+      };
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Google login failed');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
+
   /// POST /api/auth/register
   Future<Map<String, dynamic>> register({
     required String phoneNumber,
@@ -121,6 +142,54 @@ class AuthService {
     } on DioException catch (e) {
       if (e.response != null) {
         throw Exception(e.response?.data['message'] ?? 'Avatar upload failed');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
+
+  /// GET /api/users/me — Lấy thông tin cá nhân
+  Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final response = await _dioClient.dio.get('/api/users/me');
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to get profile');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
+
+  /// PUT /api/users/me — Cập nhật thông tin cá nhân
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _dioClient.dio.put('/api/users/me', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to update profile');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
+
+  /// PUT /api/users/me/password — Đổi mật khẩu
+  Future<Map<String, dynamic>> changePassword(String currentPassword, String newPassword) async {
+    try {
+      final response = await _dioClient.dio.put(
+        '/api/users/me/password',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to change password');
       } else {
         throw Exception('Network error or server unreachable');
       }

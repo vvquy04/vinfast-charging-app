@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -7,6 +8,7 @@ import '../../data/repositories/auth_repository.dart';
 /// Exposes currentUser and authorization status to the entire widget tree.
 class AuthProvider with ChangeNotifier {
   final AuthRepository _repository;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -121,9 +123,79 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Xử lý đăng nhập Google
+  /// Trả về Map chứa thông tin xử lý tiếp theo, hoặc null nếu lỗi/huỷ
+  Future<Map<String, dynamic>?> handleGoogleSignIn() async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      // Đăng xuất trước để đảm bảo chọn tài khoản mới
+      await _googleSignIn.signOut();
+      
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        _setLoading(false);
+        return null; // User canceled
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        throw Exception('Không thể lấy ID token từ Google');
+      }
+
+      final result = await _repository.loginWithGoogle(idToken);
+      
+      if (result['isNewUser'] == false) {
+        _currentUser = result['user'];
+        notifyListeners();
+      }
+      
+      _setLoading(false);
+      return result;
+    } catch (e) {
+      _setLoading(false);
+      _setError(e.toString().replaceAll('Exception: ', ''));
+      return null;
+    }
+  }
+
   Future<void> logout() async {
     await _repository.removeToken();
     _currentUser = null;
     notifyListeners();
+  }
+
+  /// Tải thông tin profile từ server (GET /api/users/me)
+  Future<bool> loadProfile() async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = await _repository.getProfile();
+      _currentUser = user;
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setLoading(false);
+      _setError(e.toString().replaceAll('Exception: ', ''));
+      return false;
+    }
+  }
+
+  /// Cập nhật thông tin profile (PUT /api/users/me)
+  Future<bool> updateProfile(Map<String, dynamic> data) async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = await _repository.updateProfile(data);
+      _currentUser = user;
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setLoading(false);
+      _setError(e.toString().replaceAll('Exception: ', ''));
+      return false;
+    }
   }
 }

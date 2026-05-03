@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../data/models/station_summary_model.dart';
 import '../../data/models/station_detail_model.dart';
+import '../../data/models/review_model.dart';
 import '../../data/repositories/station_repository.dart';
 
 class StationProvider with ChangeNotifier {
@@ -12,6 +13,9 @@ class StationProvider with ChangeNotifier {
 
   StationDetailModel? _selectedStationDetail;
   StationDetailModel? get selectedStationDetail => _selectedStationDetail;
+
+  List<ReviewModel> _reviews = [];
+  List<ReviewModel> get reviews => _reviews;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -108,11 +112,58 @@ class StationProvider with ChangeNotifier {
     try {
       final detail = await _repository.getStationDetail(stationId);
       _selectedStationDetail = detail;
+      
+      // Fetch reviews alongside detail
+      await fetchReviews(stationId);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> fetchReviews(int stationId, {int page = 0}) async {
+    try {
+      final data = await _repository.getReviews(stationId, page: page);
+      if (page == 0) {
+        _reviews = data;
+      } else {
+        _reviews.addAll(data);
+      }
+    } catch (e) {
+      debugPrint('Error fetching reviews: $e');
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<bool> addReview(int stationId, {required int rating, String? comment}) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _repository.createReview(stationId, rating: rating, comment: comment);
+      await fetchReviews(stationId); // Refresh reviews
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteReview(int stationId, int reviewId) async {
+    try {
+      await _repository.deleteReview(stationId, reviewId);
+      _reviews.removeWhere((r) => r.reviewId == reviewId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
     }
   }
 
@@ -123,6 +174,7 @@ class StationProvider with ChangeNotifier {
 
   void clearSelection() {
     _selectedStationDetail = null;
+    _reviews = [];
     notifyListeners();
   }
 }

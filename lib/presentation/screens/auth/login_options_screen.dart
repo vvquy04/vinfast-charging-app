@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -42,8 +44,32 @@ class LoginOptionsScreen extends StatelessWidget {
               AppSocialButton(
                 text: 'Tiếp tục với Google',
                 icon: _socialIcon('G', const Color(0xFFDB4437)),
-                onPressed: () {
-                  // TODO: Implement Google sign-in
+                onPressed: () async {
+                  final provider = context.read<AuthProvider>();
+                  final result = await provider.handleGoogleSignIn();
+                  
+                  if (!context.mounted) return;
+                  
+                  if (result != null) {
+                    if (result['isNewUser'] == true) {
+                      // Chuyển sang màn nhập SĐT
+                      Navigator.pushNamed(
+                        context, 
+                        '/oauth2/phone', 
+                        arguments: result['googleData'],
+                      );
+                    } else {
+                      // Đăng nhập thành công, vào dashboard
+                      Navigator.pushReplacementNamed(context, '/dashboard');
+                    }
+                  } else {
+                    final error = provider.errorMessage;
+                    if (error != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
                 },
               ),
               const SizedBox(height: AppSizes.md),

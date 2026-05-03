@@ -34,4 +34,28 @@ class StationService {
   Future<Response> getStationDetail(int stationId) async {
     return await _dioClient.dio.get('/api/stations/$stationId');
   }
+
+  /// GET /api/stations/{stationId}/reviews?page=0&size=10
+  Future<Response> getReviews(int stationId, {int page = 0, int size = 10}) async {
+    return await _dioClient.dio.get(
+      '/api/stations/$stationId/reviews',
+      queryParameters: {'page': page, 'size': size},
+    );
+  }
+
+  /// POST /api/stations/{stationId}/reviews
+  Future<Response> createReview(int stationId, {required int rating, String? comment}) async {
+    return await _dioClient.dio.post(
+      '/api/stations/$stationId/reviews',
+      data: {
+        'rating': rating,
+        'comment': comment,
+      },
+    );
+  }
+
+  /// DELETE /api/stations/{stationId}/reviews/{reviewId}
+  Future<Response> deleteReview(int stationId, int reviewId) async {
+    return await _dioClient.dio.delete('/api/stations/$stationId/reviews/$reviewId');
+  }
 }
