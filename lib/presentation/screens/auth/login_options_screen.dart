@@ -118,6 +118,22 @@ class LoginOptionsScreen extends StatelessWidget {
                 ],
               ),
 
+              const SizedBox(height: AppSizes.md),
+
+              // ─── Guest explore link ──────────────
+              GestureDetector(
+                onTap: () => Navigator.pushReplacementNamed(context, '/home'),
+                child: const Text(
+                  'Khám phá không cần đăng nhập →',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+
               const SizedBox(height: AppSizes.xl),
             ],
           ),
