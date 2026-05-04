@@ -11,11 +11,14 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/station_provider.dart';
 import 'presentation/providers/review_provider.dart';
 import 'presentation/providers/profile_provider.dart';
+import 'presentation/providers/history_provider.dart';
 import 'data/services/review_service.dart';
 import 'data/services/user_service.dart';
 import 'data/services/upload_service.dart';
+import 'data/services/history_service.dart';
 import 'data/repositories/review_repository.dart';
 import 'data/repositories/user_repository.dart';
+import 'data/repositories/history_repository.dart';
 import 'core/constants/app_colors.dart';
 import 'presentation/screens/auth/splash_screen.dart';
 import 'presentation/screens/auth/walkthrough_screen.dart';
@@ -73,6 +76,14 @@ void main() {
             final uploadService = UploadService(dioClient);
             final userRepo = UserRepository(userService, uploadService);
             return ProfileProvider(userRepo);
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final dioClient = DioClient();
+            final historyService = HistoryService(dioClient);
+            final historyRepo = HistoryRepository(historyService);
+            return HistoryProvider(historyRepo);
           },
         ),
       ],

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../../providers/station_provider.dart';
 import '../../providers/review_provider.dart';
+import '../../providers/history_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
@@ -19,15 +20,17 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch reviews after first build
+    // Fetch reviews and record history after first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final stationProvider = context.read<StationProvider>();
       final detail = stationProvider.selectedStationDetail;
       if (detail != null) {
         context.read<ReviewProvider>().fetchReviews(detail.stationId);
+        context.read<HistoryProvider>().recordVisit(detail.stationId);
       }
     });
   }
+
 
   void _showAddReviewBottomSheet(BuildContext context, int stationId) {
     int _rating = 5;
@@ -126,6 +129,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
