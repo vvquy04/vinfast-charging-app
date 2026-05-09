@@ -177,6 +177,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   }
 
   Widget _buildSearchBar() {
+    final provider = context.watch<StationProvider>();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -203,16 +204,262 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.smoke,
-              borderRadius: BorderRadius.circular(8),
+          GestureDetector(
+            onTap: () => _showFilterBottomSheet(context),
+            child: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.smoke,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.tune_rounded, color: AppColors.black, size: 20),
+                ),
+                // Badge hiển thị khi có bộ lọc đang hoạt động
+                if (provider.hasActiveFilters)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            child: const Icon(Icons.tune_rounded, color: AppColors.black, size: 20),
           )
         ],
       ),
+    );
+  }
+
+  void _showFilterBottomSheet(BuildContext context) {
+    final provider = context.read<StationProvider>();
+
+    // Tạo biến tạm để người dùng chỉnh sửa trước khi Áp dụng
+    String? selectedConnector = provider.connectorType;
+    int? selectedPower = provider.minPowerKw;
+    double? selectedRating = provider.minRating;
+
+    final connectorOptions = ['AC', 'DC', 'CCS2', 'CHAdeMO', 'Type2'];
+    final powerOptions = [0, 7, 22, 50, 100, 150, 250, 350];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ─── Handle bar ────────────────────────
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.lightGray,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ─── Title ─────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Bộ lọc',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.black,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            selectedConnector = null;
+                            selectedPower = null;
+                            selectedRating = null;
+                          });
+                        },
+                        child: const Text(
+                          'Xóa bộ lọc',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ─── Connector Type ────────────────────
+                  const Text(
+                    'Loại cổng sạc',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: connectorOptions.map((type) {
+                      final isSelected = selectedConnector == type;
+                      return GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            selectedConnector = isSelected ? null : type;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : AppColors.smoke,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            type,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected ? AppColors.white : AppColors.black,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ─── Min Power ─────────────────────────
+                  Text(
+                    'Công suất tối thiểu: ${selectedPower ?? 0} kW',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: powerOptions.map((kw) {
+                      final isSelected = (selectedPower ?? 0) == kw;
+                      return GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            selectedPower = kw == 0 ? null : kw;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : AppColors.smoke,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            kw == 0 ? 'Tất cả' : '≥ $kw kW',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected ? AppColors.white : AppColors.black,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ─── Min Rating ────────────────────────
+                  Text(
+                    'Đánh giá tối thiểu: ${selectedRating?.toStringAsFixed(0) ?? 'Tất cả'} ⭐',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: List.generate(5, (i) {
+                      final star = (i + 1).toDouble();
+                      final isSelected = (selectedRating ?? 0) >= star;
+                      return GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            selectedRating = selectedRating == star ? null : star;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Icon(
+                            isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                            color: isSelected ? Colors.amber : AppColors.lightGray,
+                            size: 36,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // ─── Apply Button ──────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        provider.applyFilters(
+                          connectorType: selectedConnector,
+                          minPowerKw: selectedPower,
+                          minRating: selectedRating,
+                        );
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Áp dụng bộ lọc',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

@@ -12,6 +12,8 @@ class StationService {
     required double longitude,
     double radius = 10,
     String? connectorType,
+    int? minPowerKw,
+    double? minRating,
     int page = 0,
     int size = 20,
   }) async {
@@ -25,6 +27,12 @@ class StationService {
     
     if (connectorType != null && connectorType.isNotEmpty) {
       queryParams['connectorType'] = connectorType;
+    }
+    if (minPowerKw != null) {
+      queryParams['minPowerKw'] = minPowerKw;
+    }
+    if (minRating != null) {
+      queryParams['minRating'] = minRating;
     }
 
     return await _dioClient.dio.get('/api/stations', queryParameters: queryParams);

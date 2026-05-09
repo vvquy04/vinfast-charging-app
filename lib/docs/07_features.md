@@ -20,8 +20,8 @@
 
 | # | Tính năng | Mô tả | Ưu tiên |
 |---|-----------|-------|---------|
-| A1 | Đăng ký | Tạo tài khoản: avatar, email, mật khẩu, họ tên, SĐT, model xe, cổng sạc | 🔴 Cao |
-| A2 | Đăng nhập | Đăng nhập bằng email + mật khẩu, nhận JWT token | 🔴 Cao |
+| A1 | Đăng ký | Tạo tài khoản qua SĐT + OTP (nhập họ tên, email, mật khẩu, xe, cổng sạc) | 🔴 Cao |
+| A2 | Đăng nhập | Đăng nhập bằng SĐT + mật khẩu hoặc Google OAuth | 🔴 Cao |
 | A3 | Đăng xuất | Xoá token, quay về màn login | 🔴 Cao |
 | A4 | Lưu phiên đăng nhập | Tự đăng nhập lại khi mở app (token trong SharedPreferences) | 🟡 Trung bình |
 
@@ -33,16 +33,15 @@
 | M2 | Hiển thị trạm sạc | Marker cho các trạm sạc trên bản đồ | 🔴 Cao |
 | M3 | Vị trí hiện tại | Lấy & hiển thị vị trí GPS của người dùng | 🔴 Cao |
 | M4 | Tap marker | Nhấn marker → popup tóm tắt trạm → nhấn tiếp → chi tiết | 🔴 Cao |
-| M5 | Chỉ đường | Mở Google Maps/Apple Maps để chỉ đường đến trạm | 🟡 Trung bình |
 
 ### 2.3 🔍 Tìm kiếm & Lọc (Search) — `screens/search/`
 
 | # | Tính năng | Mô tả | Ưu tiên |
 |---|-----------|-------|---------|
-| S1 | Tìm kiếm tên/địa chỉ | Nhập keyword, hiển thị kết quả phù hợp | 🔴 Cao |
-| S2 | Lọc theo cổng sạc | Chọn AC, DC, CCS2, CHAdeMO, Type2 | 🔴 Cao |
-| S3 | Lọc theo khoảng cách | Chọn bán kính: 5km, 10km, 20km, 50km | 🟡 Trung bình |
-| S4 | Sắp xếp kết quả | Theo khoảng cách, rating, số lượng review | 🟡 Trung bình |
+| S1 | Tìm kiếm tên/địa chỉ | Nhập keyword, hiển thị kết quả gợi ý | 🔴 Cao |
+| S2 | Lọc theo cổng sạc | Chọn loại cổng (AC, DC, CCS2, CHAdeMO, Type2) | 🔴 Cao |
+| S3 | Lọc theo công suất sạc | Chọn công suất tối thiểu (7, 22, 50, 100, 150, 250, 350 kW) | 🔴 Cao |
+| S4 | Lọc theo đánh giá | Chọn rating tối thiểu (1–5 ⭐) | 🔴 Cao |
 
 ### 2.4 📋 Chi tiết trạm (Detail) — `screens/detail/`
 
@@ -52,22 +51,21 @@
 | D2 | Danh sách cổng sạc | Loại cổng, công suất (kW), số cổng khả dụng | 🔴 Cao |
 | D3 | Điểm đánh giá | Hiển thị rating trung bình + tổng review | 🔴 Cao |
 | D4 | Danh sách review | Xem đánh giá từ người dùng khác | 🔴 Cao |
-| D5 | Nút chỉ đường | Mở bản đồ bên ngoài → dẫn đến trạm | 🟡 Trung bình |
 
 ### 2.5 ⭐ Đánh giá (Review) — `screens/review/`
 
 | # | Tính năng | Mô tả | Ưu tiên |
 |---|-----------|-------|---------|
 | R1 | Viết đánh giá | Chọn số sao (1–5) + viết comment | 🔴 Cao |
-| R2 | Xoá đánh giá | Xoá đánh giá do mình viết | 🟡 Trung bình |
 
 ### 2.6 👤 Hồ sơ người dùng (Profile)
 
 | # | Tính năng | Mô tả | Ưu tiên |
 |---|-----------|-------|---------|
-| P1 | Xem thông tin | Ảnh đại diện, Họ tên, email, SĐT, model xe, cổng sạc | 🟡 Trung bình |
-| P2 | Sửa thông tin | Cập nhật ảnh đại diện, Họ tên, SĐT, model xe, cổng sạc | 🟡 Trung bình |
-| P3 | Lịch sử xem trạm | Danh sách trạm đã xem gần đây | 🟢 Thấp |
+| P1 | Xem thông tin | Xem Ảnh đại diện, Họ tên, email, Giới tính, dòng xe, cổng sạc | 🟡 Trung bình |
+| P2 | Sửa thông tin | Cập nhật ảnh đại diện, Họ tên, email, Giới tính, dòng xe, cổng sạc | 🟡 Trung bình |
+| P3 | Xem Lịch sử trạm | Danh sách trạm đã xem gần đây | 🟢 Thấp |
+| P4 | Xóa Lịch sử trạm | Xóa từng bản ghi lịch sử xem trạm | 🟢 Thấp |
 
 ---
 

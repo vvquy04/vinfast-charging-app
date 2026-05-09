@@ -22,8 +22,22 @@ class StationProvider with ChangeNotifier {
   Position? _currentPosition;
   Position? get currentPosition => _currentPosition;
 
-  // Search logic variables
+  // ─── Filter state ─────────────────────────────
   double _radius = 10.0;
+  double get radius => _radius;
+
+  String? _connectorType;
+  String? get connectorType => _connectorType;
+
+  int? _minPowerKw;
+  int? get minPowerKw => _minPowerKw;
+
+  double? _minRating;
+  double? get minRating => _minRating;
+
+  /// Kiểm tra xem có bộ lọc nào đang được áp dụng không
+  bool get hasActiveFilters =>
+      _connectorType != null || _minPowerKw != null || _minRating != null;
   
   StationProvider(this._repository) {
     _initLocation();
@@ -77,7 +91,7 @@ class StationProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchNearbyStations({String? connectorType}) async {
+  Future<void> fetchNearbyStations() async {
     if (_currentPosition == null) return;
     
     _isLoading = true;
@@ -89,7 +103,9 @@ class StationProvider with ChangeNotifier {
         latitude: _currentPosition!.latitude,
         longitude: _currentPosition!.longitude,
         radius: _radius,
-        connectorType: connectorType,
+        connectorType: _connectorType,
+        minPowerKw: _minPowerKw,
+        minRating: _minRating,
       );
       _stations = data;
     } catch (e) {
@@ -98,6 +114,26 @@ class StationProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Áp dụng bộ lọc và tải lại danh sách trạm sạc
+  Future<void> applyFilters({
+    String? connectorType,
+    int? minPowerKw,
+    double? minRating,
+  }) async {
+    _connectorType = connectorType;
+    _minPowerKw = minPowerKw;
+    _minRating = minRating;
+    await fetchNearbyStations();
+  }
+
+  /// Xóa tất cả bộ lọc và tải lại danh sách
+  Future<void> clearFilters() async {
+    _connectorType = null;
+    _minPowerKw = null;
+    _minRating = null;
+    await fetchNearbyStations();
   }
 
   Future<void> fetchStationDetail(int stationId) async {

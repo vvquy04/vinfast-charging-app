@@ -13,6 +13,8 @@ class StationRepository {
     required double longitude,
     double radius = 10,
     String? connectorType,
+    int? minPowerKw,
+    double? minRating,
     int page = 0,
     int size = 20,
   }) async {
@@ -22,6 +24,8 @@ class StationRepository {
         longitude: longitude,
         radius: radius,
         connectorType: connectorType,
+        minPowerKw: minPowerKw,
+        minRating: minRating,
         page: page,
         size: size,
       );
