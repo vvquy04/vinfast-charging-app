@@ -96,4 +96,5 @@ class AuthService {
         throw Exception('Network error or server unreachable');
       }
     }
+  }
 }
