@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../../core/utils/validators.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
@@ -176,8 +177,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         _avatarBytes = bytes;
       });
 
-      final authProvider = context.read<AuthProvider>();
-      final uploadedUrl = await authProvider.uploadAvatar(
+      final profileProvider = context.read<ProfileProvider>();
+      final uploadedUrl = await profileProvider.uploadAvatarBytes(
         bytes: bytes,
         fileName: fileName,
       );

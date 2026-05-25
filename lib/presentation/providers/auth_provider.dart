@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:typed_data';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -106,18 +105,6 @@ class AuthProvider with ChangeNotifier {
       _setLoading(false);
       _setError(e.toString().replaceAll('Exception: ', ''));
       return false;
-    }
-  }
-
-  Future<String> uploadAvatar({
-    required Uint8List bytes,
-    required String fileName,
-  }) async {
-    try {
-      return await _repository.uploadAvatar(bytes: bytes, fileName: fileName);
-    } catch (e) {
-      _setError(e.toString().replaceAll('Exception: ', ''));
-      rethrow;
     }
   }
 

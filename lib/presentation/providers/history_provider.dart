@@ -16,13 +16,13 @@ class HistoryProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<void> fetchHistory({int page = 0, int size = 20}) async {
+  Future<void> fetchHistory() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _historyList = await _repository.getHistory(page: page, size: size);
+      _historyList = await _repository.getHistory();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

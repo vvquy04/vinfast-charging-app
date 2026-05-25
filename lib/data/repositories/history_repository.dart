@@ -7,12 +7,12 @@ class HistoryRepository {
 
   HistoryRepository(this._service);
 
-  Future<List<StationHistoryModel>> getHistory({int page = 0, int size = 20}) async {
+  Future<List<StationHistoryModel>> getHistory() async {
     try {
-      final response = await _service.getHistory(page, size);
+      final response = await _service.getHistory();
       if (response.data['success'] == true) {
-        final List<dynamic> content = response.data['data']['content'];
-        return content.map((json) => StationHistoryModel.fromJson(json)).toList();
+        final List<dynamic> list = response.data['data'];
+        return list.map((json) => StationHistoryModel.fromJson(json)).toList();
       }
       throw Exception('Không lấy được danh sách lịch sử');
     } on DioException catch (e) {

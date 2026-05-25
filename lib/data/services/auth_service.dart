@@ -1,8 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 import '../../core/utils/dio_client.dart';
-import '../models/user_model.dart';
 
 /// Class containing raw API calls to backend endpoints.
 class AuthService {
@@ -99,31 +96,4 @@ class AuthService {
         throw Exception('Network error or server unreachable');
       }
     }
-  }
-
-  /// POST /api/uploads/avatar
-  Future<Map<String, dynamic>> uploadAvatar({
-    required Uint8List bytes,
-    required String fileName,
-  }) async {
-    try {
-      final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(bytes, filename: fileName),
-      });
-
-      final response = await _dioClient.dio.post(
-        '/api/uploads/avatar',
-        data: formData,
-        options: Options(contentType: 'multipart/form-data'),
-      );
-
-      return response.data;
-    } on DioException catch (e) {
-      if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Avatar upload failed');
-      } else {
-        throw Exception('Network error or server unreachable');
-      }
-    }
-  }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
@@ -68,6 +69,21 @@ class ProfileProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return null;
+    }
+  }
+
+  /// Upload avatar từ bytes (dùng cho màn đăng ký với FilePicker).
+  /// Không gọi updateProfile vì user chưa đăng ký xong.
+  Future<String> uploadAvatarBytes({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    try {
+      return await _repository.uploadAvatarBytes(bytes, fileName);
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
     }
   }
 }

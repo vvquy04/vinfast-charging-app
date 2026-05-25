@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
@@ -41,6 +42,17 @@ class UserRepository {
   Future<String> uploadAvatar(File file) async {
     try {
       return await _uploadService.uploadAvatar(file);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Lỗi upload ảnh');
+    } catch (e) {
+      throw Exception('Lỗi không xác định: $e');
+    }
+  }
+
+  /// Upload avatar từ bytes (dùng cho màn đăng ký khi dùng FilePicker).
+  Future<String> uploadAvatarBytes(Uint8List bytes, String fileName) async {
+    try {
+      return await _uploadService.uploadAvatarBytes(bytes, fileName);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Lỗi upload ảnh');
     } catch (e) {

@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:typed_data';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -80,23 +79,6 @@ class AuthRepository {
     } else {
       throw Exception(response['message'] ?? 'Unexpected registration failure');
     }
-  }
-
-  Future<String> uploadAvatar({
-    required Uint8List bytes,
-    required String fileName,
-  }) async {
-    final response = await _authService.uploadAvatar(
-      bytes: bytes,
-      fileName: fileName,
-    );
-
-    if (response['success'] == true && response['data'] != null) {
-      final data = response['data'] as Map<String, dynamic>;
-      return data['url'] as String;
-    }
-
-    throw Exception(response['message'] ?? 'Unexpected avatar upload failure');
   }
 
   Future<void> saveToken(String token) async {

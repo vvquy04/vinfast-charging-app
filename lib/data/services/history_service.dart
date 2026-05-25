@@ -6,11 +6,8 @@ class HistoryService {
 
   HistoryService(this._dioClient);
 
-  Future<Response> getHistory(int page, int size) async {
-    return await _dioClient.dio.get(
-      '/api/history',
-      queryParameters: {'page': page, 'size': size},
-    );
+  Future<Response> getHistory() async {
+    return await _dioClient.dio.get('/api/history');
   }
 
   Future<Response> recordVisit(int stationId) async {
