@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:flutter/services.dart';
+import 'package:trackasia_gl/trackasia_gl.dart';
 import 'package:provider/provider.dart';
 import '../../providers/station_provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -15,136 +18,265 @@ class HomeMapScreen extends StatefulWidget {
 }
 
 class _HomeMapScreenState extends State<HomeMapScreen> {
-  final MapController _mapController = MapController();
-  
-  static const LatLng _initialCamera = LatLng(10.84, 106.84); // Default fallback
+  TrackAsiaMapController? _mapController;
+  bool _isMapReady = false;
+
+  // TrackAsia style URL (free demo key)
+  static const String _styleUrl =
+      'https://tiles.track-asia.com/tiles/v3/style-streets.json?key=public';
+
+  // Hanoi center (Hoan Kiem Lake)
+  static const CameraPosition _initialCamera = CameraPosition(
+    target: LatLng(21.0285, 105.8542),
+    zoom: 14.5,
+  );
+
+  // Track symbols so we can update them
+  final Map<int, Symbol> _stationSymbols = {};
+  Symbol? _userSymbol;
 
   @override
   void initState() {
     super.initState();
-    // Schedule fetching after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StationProvider>().moveToCurrentLocation();
     });
   }
 
-  Widget _buildUserMarker() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Wave ring
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.25),
-            shape: BoxShape.circle,
-          ),
-        ),
-        // Outer black border
-        Container(
-          width: 32,
-          height: 32,
-          decoration: const BoxDecoration(
-            color: AppColors.charcoal,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Container(
-            width: 26,
-            height: 26,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'U',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.black,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 
-  Widget _buildStationMarker(bool isAvailable) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        const Icon(
-          Icons.location_on,
-          size: 40,
-          color: AppColors.charcoal,
-        ),
-        Positioned(
-          top: 5,
-          child: Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: isAvailable ? AppColors.primary : AppColors.lightGray,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              '⚡',
-              style: TextStyle(
-                fontSize: 9,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+  void _onMapCreated(TrackAsiaMapController controller) {
+    _mapController = controller;
+    // Register symbol tap handler on the controller
+    _mapController!.onSymbolTapped.add(_onSymbolTapped);
   }
 
-  List<Marker> _buildMarkers(StationProvider provider) {
-    List<Marker> markers = [];
-    
-    // Add user avatar location marker
+  void _onStyleLoaded() async {
+    if (_mapController == null) return;
+
+    // Register custom images for markers
+    await _addMarkerImages();
+
+    setState(() => _isMapReady = true);
+
+    // Add markers after style is loaded
+    final provider = context.read<StationProvider>();
+    await _updateMarkers(provider);
+
+    // Listen to provider changes
+    provider.addListener(_onProviderChanged);
+  }
+
+  void _onProviderChanged() {
+    if (!_isMapReady || _mapController == null) return;
+    final provider = context.read<StationProvider>();
+    _updateMarkers(provider);
+  }
+
+  /// Create a colored circle icon for user marker
+  Future<Uint8List> _createUserMarkerImage() async {
+    const double size = 120;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Pulse ring
+    final pulsePaint = Paint()
+      ..color = AppColors.primary.withOpacity(0.25)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(size / 2, size / 2), size / 2, pulsePaint);
+
+    // Outer dark border
+    final borderPaint = Paint()
+      ..color = AppColors.charcoal
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(size / 2, size / 2), 38, borderPaint);
+
+    // Inner white circle
+    final whitePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(size / 2, size / 2), 32, whitePaint);
+
+    // Letter "U"
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: 'U',
+        style: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: AppColors.black,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size - textPainter.width) / 2,
+        (size - textPainter.height) / 2,
+      ),
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
+  /// Create station marker icon
+  Future<Uint8List> _createStationMarkerImage(bool isAvailable) async {
+    const double width = 80;
+    const double height = 100;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Pin shape - main body
+    final pinPaint = Paint()
+      ..color = AppColors.charcoal
+      ..style = PaintingStyle.fill;
+
+    // Draw pin shape (circle + triangle bottom)
+    final pinPath = Path();
+    // Circle part
+    pinPath.addOval(
+      Rect.fromCenter(
+        center: const Offset(width / 2, 36),
+        width: 60,
+        height: 60,
+      ),
+    );
+    // Triangle bottom
+    pinPath.moveTo(width / 2 - 18, 56);
+    pinPath.lineTo(width / 2, height - 4);
+    pinPath.lineTo(width / 2 + 18, 56);
+    pinPath.close();
+    canvas.drawPath(pinPath, pinPaint);
+
+    // Inner circle (status indicator)
+    final statusPaint = Paint()
+      ..color = isAvailable ? AppColors.primary : AppColors.lightGray
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(width / 2, 36), 22, statusPaint);
+
+    // Lightning bolt icon "⚡"
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: '⚡',
+        style: TextStyle(fontSize: 22),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (width - textPainter.width) / 2,
+        36 - textPainter.height / 2,
+      ),
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(width.toInt(), height.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
+  Future<void> _addMarkerImages() async {
+    if (_mapController == null) return;
+
+    final userIcon = await _createUserMarkerImage();
+    await _mapController!.addImage('user-marker', userIcon);
+
+    final availableIcon = await _createStationMarkerImage(true);
+    await _mapController!.addImage('station-available', availableIcon);
+
+    final unavailableIcon = await _createStationMarkerImage(false);
+    await _mapController!.addImage('station-unavailable', unavailableIcon);
+  }
+
+  Future<void> _updateMarkers(StationProvider provider) async {
+    if (_mapController == null || !_isMapReady) return;
+
+    // --- Update user marker ---
     if (provider.currentPosition != null) {
-      markers.add(
-        Marker(
-          point: LatLng(
-            provider.currentPosition!.latitude, 
-            provider.currentPosition!.longitude
-          ),
-          width: 50,
-          height: 50,
-          alignment: Alignment.center,
-          child: _buildUserMarker(),
-        )
+      final userLatLng = LatLng(
+        provider.currentPosition!.latitude,
+        provider.currentPosition!.longitude,
       );
-    }
-    
-    // Add stations
-    for (var station in provider.stations) {
-      bool isAvailable = station.connectorTypes.any((c) => c.totalPorts > 0);
-      
-      markers.add(
-        Marker(
-          point: LatLng(station.latitude, station.longitude),
-          width: 40,
-          height: 40,
-          alignment: Alignment.bottomCenter,
-          child: GestureDetector(
-            onTap: () {
-              provider.fetchStationDetail(station.stationId);
-            },
-            child: _buildStationMarker(isAvailable),
+
+      if (_userSymbol != null) {
+        await _mapController!.updateSymbol(
+          _userSymbol!,
+          SymbolOptions(geometry: userLatLng),
+        );
+      } else {
+        _userSymbol = await _mapController!.addSymbol(
+          SymbolOptions(
+            geometry: userLatLng,
+            iconImage: 'user-marker',
+            iconSize: 0.5,
+            iconAnchor: 'center',
           ),
-        )
-      );
+        );
+      }
     }
 
-    return markers;
+    // --- Update station markers ---
+    // Remove old station symbols that are no longer in the list
+    final currentStationIds =
+        provider.stations.map((s) => s.stationId).toSet();
+    final toRemove = _stationSymbols.keys
+        .where((id) => !currentStationIds.contains(id))
+        .toList();
+    for (final id in toRemove) {
+      await _mapController!.removeSymbol(_stationSymbols[id]!);
+      _stationSymbols.remove(id);
+    }
+
+    // Add or update station symbols
+    for (final station in provider.stations) {
+      final stationLatLng = LatLng(station.latitude, station.longitude);
+      final isAvailable =
+          station.connectorTypes.any((c) => c.totalPorts > 0);
+      final iconName =
+          isAvailable ? 'station-available' : 'station-unavailable';
+
+      if (_stationSymbols.containsKey(station.stationId)) {
+        await _mapController!.updateSymbol(
+          _stationSymbols[station.stationId]!,
+          SymbolOptions(
+            geometry: stationLatLng,
+            iconImage: iconName,
+          ),
+        );
+      } else {
+        final symbol = await _mapController!.addSymbol(
+          SymbolOptions(
+            geometry: stationLatLng,
+            iconImage: iconName,
+            iconSize: 0.5,
+            iconAnchor: 'bottom',
+          ),
+        );
+        _stationSymbols[station.stationId] = symbol;
+      }
+    }
+  }
+
+  void _onSymbolTapped(Symbol symbol) {
+    final provider = context.read<StationProvider>();
+    // Find station id from symbol
+    for (final entry in _stationSymbols.entries) {
+      if (entry.value.id == symbol.id) {
+        provider.fetchStationDetail(entry.key);
+        break;
+      }
+    }
   }
 
   @override
@@ -152,30 +284,16 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     return Scaffold(
       body: Consumer<StationProvider>(
         builder: (context, provider, child) {
-          final position = provider.currentPosition;
-          final center = position != null 
-              ? LatLng(position.latitude, position.longitude) 
-              : _initialCamera;
-
           return Stack(
             children: [
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: center,
-                  initialZoom: 14.5,
-                  minZoom: 3.0,
-                  maxZoom: 19.0,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.vanquy.evcapp.client',
-                  ),
-                  MarkerLayer(
-                    markers: _buildMarkers(provider),
-                  ),
-                ],
+              TrackAsiaMap(
+                styleString: _styleUrl,
+                initialCameraPosition: _initialCamera,
+                onMapCreated: _onMapCreated,
+                onStyleLoadedCallback: _onStyleLoaded,
+                myLocationEnabled: false,
+                trackCameraPosition: true,
+                compassEnabled: false,
               ),
 
               // ─── Top Search Bar Overlay ────────────────
@@ -196,11 +314,16 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       icon: Icons.my_location_rounded,
                       onTap: () async {
                         await provider.moveToCurrentLocation();
-                        if (provider.currentPosition != null) {
-                          _mapController.move(
-                            LatLng(provider.currentPosition!.latitude,
-                                provider.currentPosition!.longitude),
-                            14.5,
+                        if (provider.currentPosition != null &&
+                            _mapController != null) {
+                          _mapController!.animateCamera(
+                            CameraUpdate.newLatLngZoom(
+                              LatLng(
+                                provider.currentPosition!.latitude,
+                                provider.currentPosition!.longitude,
+                              ),
+                              14.5,
+                            ),
                           );
                         }
                       },
@@ -209,13 +332,13 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     _FloatingButton(
                       icon: Icons.directions_rounded,
                       onTap: () {
-                        // TODO: Implement polyline routing
+                        // TODO: Implement routing
                       },
                     ),
                   ],
                 ),
               ),
-              
+
               // ─── Bottom UI Overlay ─────────────────────
               Positioned(
                 left: 0,
@@ -268,7 +391,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     color: AppColors.smoke,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.tune_rounded, color: AppColors.black, size: 20),
+                  child: const Icon(Icons.tune_rounded,
+                      color: AppColors.black, size: 20),
                 ),
                 // Badge hiển thị khi có bộ lọc đang hoạt động
                 if (provider.hasActiveFilters)
@@ -314,7 +438,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               decoration: const BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -384,13 +509,17 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       return GestureDetector(
                         onTap: () {
                           setModalState(() {
-                            selectedConnector = isSelected ? null : type;
+                            selectedConnector =
+                                isSelected ? null : type;
                           });
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : AppColors.smoke,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.smoke,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -398,7 +527,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: isSelected ? AppColors.white : AppColors.black,
+                              color: isSelected
+                                  ? AppColors.white
+                                  : AppColors.black,
                             ),
                           ),
                         ),
@@ -429,9 +560,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                           });
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : AppColors.smoke,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.smoke,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -439,7 +573,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: isSelected ? AppColors.white : AppColors.black,
+                              color: isSelected
+                                  ? AppColors.white
+                                  : AppColors.black,
                             ),
                           ),
                         ),
@@ -465,14 +601,19 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       return GestureDetector(
                         onTap: () {
                           setModalState(() {
-                            selectedRating = selectedRating == star ? null : star;
+                            selectedRating =
+                                selectedRating == star ? null : star;
                           });
                         },
                         child: Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: Icon(
-                            isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
-                            color: isSelected ? Colors.amber : AppColors.lightGray,
+                            isSelected
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: isSelected
+                                ? Colors.amber
+                                : AppColors.lightGray,
                             size: 36,
                           ),
                         ),
@@ -504,7 +645,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       ),
                       child: const Text(
                         'Áp dụng bộ lọc',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -524,7 +666,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
     if (provider.selectedStationDetail != null) {
       final detail = provider.selectedStationDetail!;
-      // Bottom Sheet (Ảnh 2)
+      // Bottom Sheet (Chi tiết trạm sạc)
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.all(AppSizes.lg),
@@ -578,7 +720,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   onTap: () => provider.clearSelection(),
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    child: const Icon(Icons.close_rounded, color: AppColors.lightGray),
+                    child: const Icon(Icons.close_rounded,
+                        color: AppColors.lightGray),
                   ),
                 ),
               ],
@@ -587,17 +730,24 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.error,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text('In Use', style: TextStyle(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  child: const Text('In Use',
+                      style: TextStyle(
+                          color: AppColors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.location_on_rounded, size: 14, color: AppColors.gray),
+                const Icon(Icons.location_on_rounded,
+                    size: 14, color: AppColors.gray),
                 const SizedBox(width: 4),
-                const Text('1.9 km', style: TextStyle(fontSize: 13, color: AppColors.gray)),
+                const Text('1.9 km',
+                    style: TextStyle(fontSize: 13, color: AppColors.gray)),
               ],
             ),
             const SizedBox(height: AppSizes.lg),
@@ -626,7 +776,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       );
     }
 
-    // Horizontal List (Ảnh 1)
+    // Horizontal List (Danh sách trạm sạc)
     if (provider.stations.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
@@ -641,7 +791,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           return GestureDetector(
             onTap: () {
               provider.fetchStationDetail(station.stationId);
-              _mapController.move(LatLng(station.latitude, station.longitude), 14.5);
+              _mapController?.animateCamera(
+                CameraUpdate.newLatLngZoom(
+                  LatLng(station.latitude, station.longitude),
+                  14.5,
+                ),
+              );
             },
             child: Container(
               width: 280,
@@ -669,9 +824,11 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     child: station.imageUrl != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(station.imageUrl!, fit: BoxFit.cover),
+                            child: Image.network(station.imageUrl!,
+                                fit: BoxFit.cover),
                           )
-                        : const Icon(Icons.charging_station_rounded, color: AppColors.gray),
+                        : const Icon(Icons.charging_station_rounded,
+                            color: AppColors.gray),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -681,19 +838,26 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       children: [
                         Text(
                           '${station.distance.toStringAsFixed(1)} km away',
-                          style: const TextStyle(fontSize: 12, color: AppColors.gray),
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.gray),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           station.name,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.black),
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.black),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Available port: ${station.connectorTypes.length}',
-                          style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),

@@ -44,32 +44,31 @@ class StationProvider with ChangeNotifier {
   }
 
   Future<void> _initLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    // 1. Kiểm tra GPS có bật không — nếu tắt thì dùng vị trí mặc định
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      _errorMessage = 'Location services are disabled.';
+      _errorMessage = null; // Không hiện lỗi, chỉ dùng vị trí mặc định
       notifyListeners();
       return;
     }
 
-    permission = await Geolocator.checkPermission();
+    // 2. Kiểm tra quyền vị trí
+    LocationPermission permission = await Geolocator.checkPermission();
+
     if (permission == LocationPermission.denied) {
+      // Hiển thị popup xin quyền truy cập vị trí
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        _errorMessage = 'Location permissions are denied';
-        notifyListeners();
-        return;
-      }
     }
-    
-    if (permission == LocationPermission.deniedForever) {
-      _errorMessage = 'Location permissions are permanently denied.';
+
+    // 3. Nếu người dùng từ chối (denied hoặc deniedForever) → dùng vị trí mặc định
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      _errorMessage = null;
       notifyListeners();
       return;
-    } 
+    }
 
+    // 4. Đã được cấp quyền → lấy vị trí thật của người dùng
     moveToCurrentLocation();
   }
 
