@@ -1,12 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../providers/station_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../core/constants/map_style.dart';
-import '../../../core/utils/map_marker_util.dart';
 import '../../../core/widgets/app_button.dart';
 
 class HomeMapScreen extends StatefulWidget {
@@ -17,44 +15,136 @@ class HomeMapScreen extends StatefulWidget {
 }
 
 class _HomeMapScreenState extends State<HomeMapScreen> {
-  final Completer<GoogleMapController> _controller = Completer();
+  final MapController _mapController = MapController();
   
-  static const CameraPosition _initialCamera = CameraPosition(
-    target: LatLng(10.84, 106.84), // Default fallback
-    zoom: 14.4746,
-  );
-
-  BitmapDescriptor? _avatarMarker;
-  BitmapDescriptor? _stationAvailable;
-  BitmapDescriptor? _stationInUse;
+  static const LatLng _initialCamera = LatLng(10.84, 106.84); // Default fallback
 
   @override
   void initState() {
     super.initState();
-    _loadCustomMarkers();
     // Schedule fetching after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StationProvider>().moveToCurrentLocation();
     });
   }
 
-  Future<void> _loadCustomMarkers() async {
-    final avatar = await MapMarkerUtil.createAvatarMarker();
-    final stationAvail = await MapMarkerUtil.createStationMarker(true);
-    final stationUse = await MapMarkerUtil.createStationMarker(false);
-    
-    if (mounted) {
-      setState(() {
-        _avatarMarker = avatar;
-        _stationAvailable = stationAvail;
-        _stationInUse = stationUse;
-      });
-    }
+  Widget _buildUserMarker() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Wave ring
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.25),
+            shape: BoxShape.circle,
+          ),
+        ),
+        // Outer black border
+        Container(
+          width: 32,
+          height: 32,
+          decoration: const BoxDecoration(
+            color: AppColors.charcoal,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Container(
+            width: 26,
+            height: 26,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'U',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.black,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _controller.complete(controller);
-    controller.setMapStyle(AppMapStyle.silverMapStyle);
+  Widget _buildStationMarker(bool isAvailable) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        const Icon(
+          Icons.location_on,
+          size: 40,
+          color: AppColors.charcoal,
+        ),
+        Positioned(
+          top: 5,
+          child: Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: isAvailable ? AppColors.primary : AppColors.lightGray,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              '⚡',
+              style: TextStyle(
+                fontSize: 9,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Marker> _buildMarkers(StationProvider provider) {
+    List<Marker> markers = [];
+    
+    // Add user avatar location marker
+    if (provider.currentPosition != null) {
+      markers.add(
+        Marker(
+          point: LatLng(
+            provider.currentPosition!.latitude, 
+            provider.currentPosition!.longitude
+          ),
+          width: 50,
+          height: 50,
+          alignment: Alignment.center,
+          child: _buildUserMarker(),
+        )
+      );
+    }
+    
+    // Add stations
+    for (var station in provider.stations) {
+      bool isAvailable = station.connectorTypes.any((c) => c.totalPorts > 0);
+      
+      markers.add(
+        Marker(
+          point: LatLng(station.latitude, station.longitude),
+          width: 40,
+          height: 40,
+          alignment: Alignment.bottomCenter,
+          child: GestureDetector(
+            onTap: () {
+              provider.fetchStationDetail(station.stationId);
+            },
+            child: _buildStationMarker(isAvailable),
+          ),
+        )
+      );
+    }
+
+    return markers;
   }
 
   @override
@@ -63,25 +153,29 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       body: Consumer<StationProvider>(
         builder: (context, provider, child) {
           final position = provider.currentPosition;
-          
-          CameraPosition currentCamera = _initialCamera;
-          if (position != null) {
-            currentCamera = CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 14.5,
-            );
-          }
+          final center = position != null 
+              ? LatLng(position.latitude, position.longitude) 
+              : _initialCamera;
 
           return Stack(
             children: [
-              GoogleMap(
-                mapType: MapType.normal,
-                initialCameraPosition: currentCamera,
-                myLocationEnabled: false, // We will use custom avatar marker later
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: false,
-                onMapCreated: _onMapCreated,
-                markers: _buildMarkers(provider),
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: 14.5,
+                  minZoom: 3.0,
+                  maxZoom: 19.0,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.vanquy.evcapp.client',
+                  ),
+                  MarkerLayer(
+                    markers: _buildMarkers(provider),
+                  ),
+                ],
               ),
 
               // ─── Top Search Bar Overlay ────────────────
@@ -103,11 +197,11 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       onTap: () async {
                         await provider.moveToCurrentLocation();
                         if (provider.currentPosition != null) {
-                          final c = await _controller.future;
-                          c.animateCamera(CameraUpdate.newLatLng(
+                          _mapController.move(
                             LatLng(provider.currentPosition!.latitude,
                                 provider.currentPosition!.longitude),
-                          ));
+                            14.5,
+                          );
                         }
                       },
                     ),
@@ -134,46 +228,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         },
       ),
     );
-  }
-
-  Set<Marker> _buildMarkers(StationProvider provider) {
-    Set<Marker> markers = {};
-    
-    // Add user avatar location marker
-    if (provider.currentPosition != null && _avatarMarker != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('current_location'),
-          position: LatLng(
-            provider.currentPosition!.latitude, 
-            provider.currentPosition!.longitude
-          ),
-          icon: _avatarMarker!,
-          zIndex: 99,
-        )
-      );
-    }
-    
-    // Add stations
-    if (_stationAvailable != null && _stationInUse != null) {
-      for (var station in provider.stations) {
-        // Giả sử có connector rảnh thì isAvailable = true
-        bool isAvailable = station.connectorTypes.any((c) => c.totalPorts > 0);
-        
-        markers.add(
-          Marker(
-            markerId: MarkerId(station.stationId.toString()),
-            position: LatLng(station.latitude, station.longitude),
-            icon: isAvailable ? _stationAvailable! : _stationInUse!,
-            onTap: () {
-              provider.fetchStationDetail(station.stationId);
-            },
-          )
-        );
-      }
-    }
-
-    return markers;
   }
 
   Widget _buildSearchBar() {
@@ -587,8 +641,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           return GestureDetector(
             onTap: () {
               provider.fetchStationDetail(station.stationId);
-              final c = _controller.future;
-              c.then((map) => map.animateCamera(CameraUpdate.newLatLng(LatLng(station.latitude, station.longitude))));
+              _mapController.move(LatLng(station.latitude, station.longitude), 14.5);
             },
             child: Container(
               width: 280,
