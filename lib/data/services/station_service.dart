@@ -14,15 +14,11 @@ class StationService {
     String? connectorType,
     int? minPowerKw,
     double? minRating,
-    int page = 0,
-    int size = 20,
   }) async {
     final Map<String, dynamic> queryParams = {
       'latitude': latitude,
       'longitude': longitude,
       'radius': radius,
-      'page': page,
-      'size': size,
     };
     
     if (connectorType != null && connectorType.isNotEmpty) {

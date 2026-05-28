@@ -15,8 +15,6 @@ class StationRepository {
     String? connectorType,
     int? minPowerKw,
     double? minRating,
-    int page = 0,
-    int size = 20,
   }) async {
     try {
       final response = await _stationService.searchStations(
@@ -26,13 +24,10 @@ class StationRepository {
         connectorType: connectorType,
         minPowerKw: minPowerKw,
         minRating: minRating,
-        page: page,
-        size: size,
       );
 
       if (response.statusCode == 200) {
-        // ApiResponse<PageResponse<StationSummaryResponse>>
-        final data = response.data['data']['content'] as List;
+        final List<dynamic> data = response.data['data'];
         return data.map((json) => StationSummaryModel.fromJson(json)).toList();
       }
       throw Exception(response.data['message'] ?? 'Failed to fetch stations');

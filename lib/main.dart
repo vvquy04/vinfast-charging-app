@@ -42,36 +42,30 @@ void main() {
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+
+  // Tạo 1 DioClient duy nhất, chia sẻ cho tất cả services
+  final dioClient = DioClient();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) {
-            final dioClient = DioClient();
-            final authService = AuthService(dioClient);
-            final authRepository = AuthRepository(authService);
-            return AuthProvider(authRepository);
-          },
+          create: (_) => AuthProvider(
+            AuthRepository(AuthService(dioClient)),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => StationProvider(
+            StationRepository(StationService(dioClient)),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReviewProvider(
+            ReviewRepository(ReviewService(dioClient)),
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) {
-            final dioClient = DioClient();
-            final stationService = StationService(dioClient);
-            final stationRepo = StationRepository(stationService);
-            return StationProvider(stationRepo);
-          },
-        ),
-        ChangeNotifierProvider(
-          create: (_) {
-            final dioClient = DioClient();
-            final reviewService = ReviewService(dioClient);
-            final reviewRepo = ReviewRepository(reviewService);
-            return ReviewProvider(reviewRepo);
-          },
-        ),
-        ChangeNotifierProvider(
-          create: (_) {
-            final dioClient = DioClient();
             final userService = UserService(dioClient);
             final uploadService = UploadService(dioClient);
             final userRepo = UserRepository(userService, uploadService);
@@ -79,12 +73,9 @@ void main() {
           },
         ),
         ChangeNotifierProvider(
-          create: (_) {
-            final dioClient = DioClient();
-            final historyService = HistoryService(dioClient);
-            final historyRepo = HistoryRepository(historyService);
-            return HistoryProvider(historyRepo);
-          },
+          create: (_) => HistoryProvider(
+            HistoryRepository(HistoryService(dioClient)),
+          ),
         ),
       ],
       child: const EVCPointApp(),
@@ -135,7 +126,6 @@ class EVCPointApp extends StatelessWidget {
         '/signup/otp': (context) => const OtpVerificationScreen(),
         '/signup/profile': (context) => const CompleteProfileScreen(),
         '/signup/vehicle': (context) => const AddVehicleScreen(),
-        // TODO: Add home screen route
         '/home': (context) => const DashboardScreen(),
         '/station_detail': (context) => const StationDetailScreen(),
       },

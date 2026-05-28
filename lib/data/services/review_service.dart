@@ -6,11 +6,8 @@ class ReviewService {
 
   ReviewService(this._dioClient);
 
-  Future<Response> getReviewsByStation(int stationId, int page, int size) async {
-    return await _dioClient.dio.get(
-      '/api/reviews/station/$stationId',
-      queryParameters: {'page': page, 'size': size},
-    );
+  Future<Response> getReviewsByStation(int stationId) async {
+    return await _dioClient.dio.get('/api/reviews/station/$stationId');
   }
 
   Future<Response> submitReview(int stationId, int rating, String? comment) async {

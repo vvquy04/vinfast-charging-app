@@ -16,13 +16,13 @@ class ReviewProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<void> fetchReviews(int stationId, {int page = 0, int size = 10}) async {
+  Future<void> fetchReviews(int stationId) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final fetchedReviews = await _repository.getReviewsByStation(stationId, page: page, size: size);
+      final fetchedReviews = await _repository.getReviewsByStation(stationId);
       _reviews = fetchedReviews;
     } catch (e) {
       _errorMessage = e.toString();

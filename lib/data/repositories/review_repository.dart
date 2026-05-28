@@ -7,12 +7,12 @@ class ReviewRepository {
 
   ReviewRepository(this._service);
 
-  Future<List<ReviewModel>> getReviewsByStation(int stationId, {int page = 0, int size = 10}) async {
+  Future<List<ReviewModel>> getReviewsByStation(int stationId) async {
     try {
-      final response = await _service.getReviewsByStation(stationId, page, size);
+      final response = await _service.getReviewsByStation(stationId);
       if (response.data['success'] == true) {
-        final List<dynamic> content = response.data['data']['content'];
-        return content.map((json) => ReviewModel.fromJson(json)).toList();
+        final List<dynamic> list = response.data['data'];
+        return list.map((json) => ReviewModel.fromJson(json)).toList();
       }
       throw Exception('Không lấy được danh sách đánh giá');
     } on DioException catch (e) {
