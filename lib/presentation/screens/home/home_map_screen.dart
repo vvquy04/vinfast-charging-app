@@ -23,7 +23,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   // TrackAsia style URL (free demo key)
   static const String _styleUrl =
-      'https://tiles.track-asia.com/tiles/v3/style-streets.json?key=public';
+      'https://maps.track-asia.com/styles/v2/streets.json?key=public_key';
 
   // Hanoi center (Hoan Kiem Lake)
   static const CameraPosition _initialCamera = CameraPosition(
