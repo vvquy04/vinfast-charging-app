@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Show error snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Login failed'),
+          content: Text(authProvider.errorMessage ?? 'Đăng nhập thất bại'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ─── Phone field ────────────────────
               AppTextField(
-                label: 'Phone Number',
+                label: 'Số điện thoại',
                 hint: '901 234 567',
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
@@ -154,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ─── Password field ─────────────────
               AppTextField(
-                label: 'Password',
+                label: 'Mật khẩu',
                 hint: '••••••••',
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -193,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: const Text('Forgot password?'),
+                  child: const Text('Quên mật khẩu?'),
                 ),
               ),
 

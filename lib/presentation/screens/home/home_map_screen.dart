@@ -375,7 +375,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           const Expanded(
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Search station',
+                hintText: 'Tìm kiếm trạm sạc',
                 hintStyle: TextStyle(color: AppColors.lightGray),
                 border: InputBorder.none,
               ),
@@ -736,7 +736,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     color: AppColors.error,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text('In Use',
+                  child: const Text('Đang sử dụng',
                       style: TextStyle(
                           color: AppColors.white,
                           fontSize: 10,
@@ -751,25 +751,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               ],
             ),
             const SizedBox(height: AppSizes.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    text: 'Chi Tiết',
-                    style: AppButtonStyle.outlined,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/station_detail');
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppButton(
-                    text: 'Đặt Lịch',
-                    onPressed: () {},
-                  ),
-                ),
-              ],
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: 'Chi Tiết',
+                onPressed: () {
+                  Navigator.pushNamed(context, '/station_detail');
+                },
+              ),
             ),
           ],
         ),
@@ -837,7 +826,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          '${station.distance.toStringAsFixed(1)} km away',
+                          'Cách ${station.distance.toStringAsFixed(1)} km',
                           style: const TextStyle(
                               fontSize: 12, color: AppColors.gray),
                         ),
@@ -853,7 +842,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Available port: ${station.connectorTypes.length}',
+                          'Cổng sạc sẵn có: ${station.connectorTypes.length}',
                           style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.primary,
