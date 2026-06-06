@@ -4,9 +4,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     
     <application
-        android:label="EVC Charger"
+        android:label="EVCPoint"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
 
         <meta-data
             android:name="io.flutter.embedding.android.DisableImpeller"

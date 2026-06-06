@@ -22,8 +22,26 @@ class StationProvider with ChangeNotifier {
   Position? _currentPosition;
   Position? get currentPosition => _currentPosition;
 
+  /// Có đang dùng vị trí mặc định hay không (GPS tắt hoặc quyền bị từ chối)
+  bool _usingDefaultLocation = false;
+  bool get usingDefaultLocation => _usingDefaultLocation;
+
+  // ─── Vị trí mặc định: Trung tâm Hà Nội (Hồ Hoàn Kiếm) ────
+  static const double _defaultLatitude = 21.0285;
+  static const double _defaultLongitude = 105.8542;
+
+  // ─── Vị trí tìm kiếm hiện tại (theo chuyển động bản đồ hoặc vị trí hiện tại) ────
+  double? _searchLatitude;
+  double? _searchLongitude;
+  double? get searchLatitude => _searchLatitude;
+  double? get searchLongitude => _searchLongitude;
+
+  // ─── Vị trí đã fetch dữ liệu gần nhất (để tối ưu hóa, tránh gọi API liên tục khi di chuyển nhỏ) ────
+  double? _lastFetchedLatitude;
+  double? _lastFetchedLongitude;
+
   // ─── Filter state ─────────────────────────────
-  double _radius = 10.0;
+  double _radius = 50.0; // 50km để bao phủ toàn bộ Hà Nội (gồm Ba Vì, Sóc Sơn)
   double get radius => _radius;
 
   String? _connectorType;
@@ -44,32 +62,58 @@ class StationProvider with ChangeNotifier {
   }
 
   Future<void> _initLocation() async {
-    // 1. Kiểm tra GPS có bật không — nếu tắt thì dùng vị trí mặc định
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _errorMessage = null; // Không hiện lỗi, chỉ dùng vị trí mặc định
-      notifyListeners();
-      return;
+    try {
+      // 1. Kiểm tra GPS có bật không
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('📍 GPS chưa bật — Sử dụng vị trí mặc định (Hà Nội)');
+        _useDefaultLocationAndFetch();
+        return;
+      }
+
+      // 2. Kiểm tra quyền vị trí
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        // Hiển thị popup xin quyền truy cập vị trí
+        permission = await Geolocator.requestPermission();
+      }
+
+      // 3. Nếu người dùng từ chối (denied hoặc deniedForever) → dùng vị trí mặc định
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        debugPrint('📍 Quyền vị trí bị từ chối — Sử dụng vị trí mặc định (Hà Nội)');
+        _useDefaultLocationAndFetch();
+        return;
+      }
+
+      // 4. Đã được cấp quyền → lấy vị trí thật của người dùng
+      debugPrint('📍 Đã có quyền vị trí — Đang lấy vị trí thật...');
+      await moveToCurrentLocation();
+    } catch (e) {
+      debugPrint('📍 Lỗi khởi tạo vị trí: $e — Sử dụng vị trí mặc định');
+      _useDefaultLocationAndFetch();
     }
+  }
 
-    // 2. Kiểm tra quyền vị trí
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      // Hiển thị popup xin quyền truy cập vị trí
-      permission = await Geolocator.requestPermission();
-    }
-
-    // 3. Nếu người dùng từ chối (denied hoặc deniedForever) → dùng vị trí mặc định
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      _errorMessage = null;
-      notifyListeners();
-      return;
-    }
-
-    // 4. Đã được cấp quyền → lấy vị trí thật của người dùng
-    moveToCurrentLocation();
+  /// Sử dụng vị trí mặc định (Hà Nội) và tải danh sách trạm sạc
+  void _useDefaultLocationAndFetch() {
+    _usingDefaultLocation = true;
+    _currentPosition = Position(
+      latitude: _defaultLatitude,
+      longitude: _defaultLongitude,
+      timestamp: DateTime.now(),
+      accuracy: 0,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+    _errorMessage = null;
+    notifyListeners();
+    fetchNearbyStations();
   }
 
   Future<void> moveToCurrentLocation() async {
@@ -78,37 +122,108 @@ class StationProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Kiểm tra quyền trước khi lấy vị trí
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        // Quyền bị từ chối → dùng vị trí mặc định
+        if (_currentPosition == null) {
+          _useDefaultLocationAndFetch();
+        }
+        return;
+      }
+
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high
+        desiredAccuracy: LocationAccuracy.high,
       );
       _currentPosition = position;
-      await fetchNearbyStations(); // Search based on new location
+      _usingDefaultLocation = false;
+      
+      // Reset vị trí tìm kiếm và vị trí fetch gần nhất về vị trí thực của người dùng
+      _searchLatitude = position.latitude;
+      _searchLongitude = position.longitude;
+      _lastFetchedLatitude = null;
+      _lastFetchedLongitude = null;
+
+      debugPrint('📍 Vị trí thật: ${position.latitude}, ${position.longitude}');
+      await fetchNearbyStations();
     } catch (e) {
-      _errorMessage = e.toString();
-      _isLoading = false;
-      notifyListeners();
+      debugPrint('📍 Lỗi lấy vị trí: $e');
+      // Nếu chưa có vị trí nào → dùng vị trí mặc định
+      if (_currentPosition == null) {
+        _useDefaultLocationAndFetch();
+      } else {
+        _errorMessage = e.toString();
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
-  Future<void> fetchNearbyStations() async {
-    if (_currentPosition == null) return;
+  /// Cập nhật vị trí tìm kiếm khi người dùng di chuyển bản đồ
+  Future<void> updateSearchPosition(double latitude, double longitude) async {
+    _searchLatitude = latitude;
+    _searchLongitude = longitude;
+    await fetchNearbyStations();
+  }
+
+  /// Tính khoảng cách từ vị trí người dùng (hoặc vị trí mặc định) tới trạm sạc (đơn vị: km)
+  double getDistanceToUser(double stationLat, double stationLng) {
+    final double userLat = _currentPosition?.latitude ?? _defaultLatitude;
+    final double userLng = _currentPosition?.longitude ?? _defaultLongitude;
     
+    final double distanceInMeters = Geolocator.distanceBetween(
+      userLat,
+      userLng,
+      stationLat,
+      stationLng,
+    );
+    return distanceInMeters / 1000.0;
+  }
+
+  Future<void> fetchNearbyStations() async {
+    final double searchLat = _searchLatitude ?? _currentPosition?.latitude ?? _defaultLatitude;
+    final double searchLng = _searchLongitude ?? _currentPosition?.longitude ?? _defaultLongitude;
+    
+    // Tối ưu hóa: Nếu vị trí tìm kiếm mới cách vị trí fetch gần nhất dưới 200m thì bỏ qua không fetch lại
+    if (_lastFetchedLatitude != null && _lastFetchedLongitude != null) {
+      final double distanceMoved = Geolocator.distanceBetween(
+        _lastFetchedLatitude!,
+        _lastFetchedLongitude!,
+        searchLat,
+        searchLng,
+      );
+      if (distanceMoved < 200) {
+        debugPrint('📍 Vị trí di chuyển quá nhỏ ($distanceMoved m) — Bỏ qua fetch API');
+        return;
+      }
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      debugPrint('🔍 Tìm trạm sạc: lat=$searchLat, lng=$searchLng, radius=$_radius km');
       final data = await _repository.searchStations(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
+        latitude: searchLat,
+        longitude: searchLng,
         radius: _radius,
         connectorType: _connectorType,
         minPowerKw: _minPowerKw,
         minRating: _minRating,
       );
       _stations = data;
+      _lastFetchedLatitude = searchLat;
+      _lastFetchedLongitude = searchLng;
+      debugPrint('✅ Tìm thấy ${data.length} trạm sạc');
     } catch (e) {
       _errorMessage = e.toString();
+      debugPrint('❌ Lỗi tìm trạm sạc: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -124,6 +239,8 @@ class StationProvider with ChangeNotifier {
     _connectorType = connectorType;
     _minPowerKw = minPowerKw;
     _minRating = minRating;
+    _lastFetchedLatitude = null;
+    _lastFetchedLongitude = null;
     await fetchNearbyStations();
   }
 
@@ -132,6 +249,8 @@ class StationProvider with ChangeNotifier {
     _connectorType = null;
     _minPowerKw = null;
     _minRating = null;
+    _lastFetchedLatitude = null;
+    _lastFetchedLongitude = null;
     await fetchNearbyStations();
   }
 
@@ -153,6 +272,8 @@ class StationProvider with ChangeNotifier {
 
   void updateRadius(double newRadius) {
     _radius = newRadius;
+    _lastFetchedLatitude = null;
+    _lastFetchedLongitude = null;
     fetchNearbyStations();
   }
 
@@ -161,3 +282,4 @@ class StationProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+

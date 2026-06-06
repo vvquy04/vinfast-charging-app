@@ -37,12 +37,13 @@ dependencies:
   dio: ^5.9.2
   shared_preferences: ^2.5.5
   provider: ^6.1.5+1
-  trackasia_gl: 2.0.1
+  trackasia_gl: 2.0.3
   geolocator: ^13.0.0
   file_picker: ^10.3.1
   flutter_rating_bar: ^4.0.1
   image_picker: ^1.2.2
-  trackasia_gl_platform_interface: 2.0.1
+  trackasia_gl_platform_interface: 2.0.2
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:
@@ -65,6 +66,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/images/logo.jpg
+    - assets/images/walkthrough_map.jpg
+    - assets/images/walkthrough_charge.jpg
+    - assets/images/walkthrough_review.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

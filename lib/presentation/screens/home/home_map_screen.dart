@@ -34,6 +34,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   // Track symbols so we can update them
   final Map<int, Symbol> _stationSymbols = {};
   Symbol? _userSymbol;
+  ui.Image? _logoImage;
 
   @override
   void initState() {
@@ -116,10 +117,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     textPainter.layout();
     textPainter.paint(
       canvas,
-      Offset(
-        (size - textPainter.width) / 2,
-        (size - textPainter.height) / 2,
-      ),
+      Offset((size - textPainter.width) / 2, (size - textPainter.height) / 2),
     );
 
     final picture = recorder.endRecording();
@@ -130,55 +128,76 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   /// Create station marker icon
   Future<Uint8List> _createStationMarkerImage(bool isAvailable) async {
-    const double width = 80;
-    const double height = 100;
+    const double width = 160;
+    const double height = 180;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Pin shape - main body
-    final pinPaint = Paint()
-      ..color = AppColors.charcoal
-      ..style = PaintingStyle.fill;
-
-    // Draw pin shape (circle + triangle bottom)
+    // 1. Create teardrop pin shape (circle + triangle bottom)
     final pinPath = Path();
-    // Circle part
     pinPath.addOval(
-      Rect.fromCenter(
-        center: const Offset(width / 2, 36),
-        width: 60,
-        height: 60,
-      ),
+      Rect.fromCircle(center: const Offset(width / 2, 65), radius: 50),
     );
-    // Triangle bottom
-    pinPath.moveTo(width / 2 - 18, 56);
-    pinPath.lineTo(width / 2, height - 4);
-    pinPath.lineTo(width / 2 + 18, 56);
-    pinPath.close();
-    canvas.drawPath(pinPath, pinPaint);
 
-    // Inner circle (status indicator)
-    final statusPaint = Paint()
-      ..color = isAvailable ? AppColors.primary : AppColors.lightGray
+    final trianglePath = Path();
+    trianglePath.moveTo(width / 2 - 38, 97);
+    trianglePath.lineTo(width / 2, height - 12);
+    trianglePath.lineTo(width / 2 + 38, 97);
+    trianglePath.close();
+
+    final unifiedPath = Path.combine(PathOperation.union, pinPath, trianglePath);
+
+    // 2. Draw Shadow under the pin
+    canvas.drawPath(
+      unifiedPath.shift(const Offset(0, 6)),
+      Paint()
+        ..color = Colors.black.withOpacity(0.2)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+
+    // 3. Draw Background fill (Navy for Available, LightGray for Unavailable)
+    final bgPaint = Paint()
+      ..color = isAvailable ? AppColors.navy : AppColors.lightGray
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(width / 2, 36), 22, statusPaint);
+    canvas.drawPath(unifiedPath, bgPaint);
 
-    // Lightning bolt icon "⚡"
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: '⚡',
-        style: TextStyle(fontSize: 22),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        (width - textPainter.width) / 2,
-        36 - textPainter.height / 2,
-      ),
-    );
+    // 4. Draw White border outline
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(unifiedPath, borderPaint);
+
+    // 5. Draw the preloaded Logo image inside a circular clip, centered in the pin
+    if (_logoImage != null) {
+      canvas.save();
+      
+      final logoClip = Path();
+      logoClip.addOval(
+        Rect.fromCircle(center: const Offset(width / 2, 65), radius: 38),
+      );
+      canvas.clipPath(logoClip);
+
+      canvas.drawImageRect(
+        _logoImage!,
+        Rect.fromLTWH(0, 0, _logoImage!.width.toDouble(), _logoImage!.height.toDouble()),
+        Rect.fromCircle(center: const Offset(width / 2, 65), radius: 38),
+        Paint(),
+      );
+      
+      canvas.restore();
+
+      // Draw thin white border around the logo circular mask
+      canvas.drawCircle(
+        const Offset(width / 2, 65),
+        38,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5,
+      );
+    }
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(width.toInt(), height.toInt());
@@ -188,6 +207,16 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   Future<void> _addMarkerImages() async {
     if (_mapController == null) return;
+
+    // Load logo image asset once
+    try {
+      final byteData = await rootBundle.load('assets/images/logo.jpg');
+      final codec = await ui.instantiateImageCodec(byteData.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      _logoImage = frame.image;
+    } catch (e) {
+      debugPrint('Error loading logo asset: $e');
+    }
 
     final userIcon = await _createUserMarkerImage();
     await _mapController!.addImage('user-marker', userIcon);
@@ -228,8 +257,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
     // --- Update station markers ---
     // Remove old station symbols that are no longer in the list
-    final currentStationIds =
-        provider.stations.map((s) => s.stationId).toSet();
+    final currentStationIds = provider.stations.map((s) => s.stationId).toSet();
     final toRemove = _stationSymbols.keys
         .where((id) => !currentStationIds.contains(id))
         .toList();
@@ -241,10 +269,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     // Add or update station symbols
     for (final station in provider.stations) {
       final stationLatLng = LatLng(station.latitude, station.longitude);
-      final isAvailable =
-          station.connectorTypes.any((c) => c.totalPorts > 0);
-      final iconName =
-          isAvailable ? 'station-available' : 'station-unavailable';
+      final isAvailable = station.connectorTypes.any((c) => c.totalPorts > 0);
+      final iconName = isAvailable
+          ? 'station-available'
+          : 'station-unavailable';
 
       if (_stationSymbols.containsKey(station.stationId)) {
         await _mapController!.updateSymbol(
@@ -252,6 +280,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           SymbolOptions(
             geometry: stationLatLng,
             iconImage: iconName,
+            iconSize: 1.2,
           ),
         );
       } else {
@@ -259,7 +288,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           SymbolOptions(
             geometry: stationLatLng,
             iconImage: iconName,
-            iconSize: 0.5,
+            iconSize: 1.2,
             iconAnchor: 'bottom',
           ),
         );
@@ -273,7 +302,21 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     // Find station id from symbol
     for (final entry in _stationSymbols.entries) {
       if (entry.value.id == symbol.id) {
-        provider.fetchStationDetail(entry.key);
+        final stationId = entry.key;
+        provider.fetchStationDetail(stationId);
+        
+        // Find the station in the list to animate/zoom camera to its coordinates
+        try {
+          final station = provider.stations.firstWhere((s) => s.stationId == stationId);
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(station.latitude, station.longitude),
+              15.5, // Zoom in closer to the selected station
+            ),
+          );
+        } catch (e) {
+          debugPrint('Error animating camera to station: $e');
+        }
         break;
       }
     }
@@ -365,7 +408,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             color: AppColors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -391,8 +434,11 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     color: AppColors.smoke,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.tune_rounded,
-                      color: AppColors.black, size: 20),
+                  child: const Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.black,
+                    size: 20,
+                  ),
                 ),
                 // Badge hiển thị khi có bộ lọc đang hoạt động
                 if (provider.hasActiveFilters)
@@ -410,7 +456,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -438,8 +484,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               decoration: const BoxDecoration(
                 color: AppColors.white,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -509,13 +554,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       return GestureDetector(
                         onTap: () {
                           setModalState(() {
-                            selectedConnector =
-                                isSelected ? null : type;
+                            selectedConnector = isSelected ? null : type;
                           });
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.primary
@@ -561,7 +607,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.primary
@@ -601,8 +649,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       return GestureDetector(
                         onTap: () {
                           setModalState(() {
-                            selectedRating =
-                                selectedRating == star ? null : star;
+                            selectedRating = selectedRating == star
+                                ? null
+                                : star;
                           });
                         },
                         child: Padding(
@@ -646,7 +695,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       child: const Text(
                         'Áp dụng bộ lọc',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -678,7 +729,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               color: AppColors.black.withOpacity(0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -720,8 +771,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   onTap: () => provider.clearSelection(),
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    child: const Icon(Icons.close_rounded,
-                        color: AppColors.lightGray),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.lightGray,
+                    ),
                   ),
                 ),
               ],
@@ -730,24 +783,34 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.error,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text('Đang sử dụng',
-                      style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Đang sử dụng',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.location_on_rounded,
-                    size: 14, color: AppColors.gray),
+                const Icon(
+                  Icons.location_on_rounded,
+                  size: 14,
+                  color: AppColors.gray,
+                ),
                 const SizedBox(width: 4),
-                const Text('1.9 km',
-                    style: TextStyle(fontSize: 13, color: AppColors.gray)),
+                const Text(
+                  '1.9 km',
+                  style: TextStyle(fontSize: 13, color: AppColors.gray),
+                ),
               ],
             ),
             const SizedBox(height: AppSizes.lg),
@@ -798,7 +861,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     color: AppColors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ],
               ),
               child: Row(
@@ -813,11 +876,15 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     child: station.imageUrl != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(station.imageUrl!,
-                                fit: BoxFit.cover),
+                            child: Image.network(
+                              station.imageUrl!,
+                              fit: BoxFit.cover,
+                            ),
                           )
-                        : const Icon(Icons.charging_station_rounded,
-                            color: AppColors.gray),
+                        : const Icon(
+                            Icons.charging_station_rounded,
+                            color: AppColors.gray,
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -828,15 +895,18 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                         Text(
                           'Cách ${station.distance.toStringAsFixed(1)} km',
                           style: const TextStyle(
-                              fontSize: 12, color: AppColors.gray),
+                            fontSize: 12,
+                            color: AppColors.gray,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           station.name,
                           style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.black),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.black,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -844,9 +914,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                         Text(
                           'Cổng sạc sẵn có: ${station.connectorTypes.length}',
                           style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600),
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
@@ -882,7 +953,7 @@ class _FloatingButton extends StatelessWidget {
               color: AppColors.black.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
-            )
+            ),
           ],
         ),
         child: Icon(icon, color: AppColors.black, size: 20),

@@ -40,7 +40,7 @@ class AppButton extends StatelessWidget {
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  isDisabled ? AppColors.disabled : AppColors.black,
+                  isDisabled ? AppColors.disabled : AppColors.primary,
               foregroundColor: AppColors.white,
               disabledBackgroundColor: AppColors.disabled,
               disabledForegroundColor: AppColors.disabledText,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'core/utils/dio_client.dart';
 import 'data/services/auth_service.dart';
@@ -91,29 +92,32 @@ class EVCPointApp extends StatelessWidget {
     return MaterialApp(
       title: 'EVCPoint',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: AppColors.white,
-        colorScheme: const ColorScheme.light(
-          primary: AppColors.black,
-          onPrimary: AppColors.white,
-          surface: AppColors.white,
-          onSurface: AppColors.black,
-          error: AppColors.error,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.black,
-          elevation: 0,
-          centerTitle: true,
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark,
+        theme: ThemeData(
+          brightness: Brightness.light,
+          scaffoldBackgroundColor: AppColors.white,
+          textTheme: GoogleFonts.interTextTheme(
+            ThemeData.light().textTheme,
           ),
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.black,
+            onPrimary: AppColors.white,
+            surface: AppColors.white,
+            onSurface: AppColors.black,
+            error: AppColors.error,
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: AppColors.white,
+            foregroundColor: AppColors.black,
+            elevation: 0,
+            centerTitle: true,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
+          ),
+          splashColor: AppColors.silver.withOpacity(0.3),
+          highlightColor: AppColors.silver.withOpacity(0.1),
         ),
-        splashColor: AppColors.silver.withOpacity(0.3),
-        highlightColor: AppColors.silver.withOpacity(0.1),
-      ),
 
       // ─── Routes ──────────────────────────────────
       initialRoute: '/',

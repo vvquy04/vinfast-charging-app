@@ -20,22 +20,19 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
 
   static const List<_PageData> _pages = [
     _PageData(
-      icon: Icons.location_on_rounded,
-      decorIcon: Icons.map_rounded,
+      imagePath: 'assets/images/walkthrough_map.jpg',
       title: 'Tìm trạm sạc điện\ngần bạn',
       subtitle:
           'Dễ dàng xác định vị trí trạm sạc xung quanh bạn với thông tin khoảng cách và tình trạng thực.',
     ),
     _PageData(
-      icon: Icons.bolt_rounded,
-      decorIcon: Icons.battery_charging_full_rounded,
+      imagePath: 'assets/images/walkthrough_charge.jpg',
       title: 'Trải nghiệm sạc\nthông minh',
       subtitle:
           'Nhận đề xuất cá nhân hóa dựa trên mẫu xe và loại súng sạc ưu tiên của bạn.',
     ),
     _PageData(
-      icon: Icons.star_rounded,
-      decorIcon: Icons.people_rounded,
+      imagePath: 'assets/images/walkthrough_review.jpg',
       title: 'Đánh giá & chia sẻ\ntừ cộng đồng',
       subtitle:
           'Đọc đánh giá từ những người dùng EV khác và chia sẻ kinh nghiệm sạc của riêng bạn.',
@@ -176,52 +173,11 @@ class _Illustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220,
-      height: 220,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Outer ring
-          Container(
-            width: 220,
-            height: 220,
-            decoration: const BoxDecoration(
-              color: AppColors.smoke,
-              shape: BoxShape.circle,
-            ),
-          ),
-          // Inner ring
-          Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              color: AppColors.silver.withOpacity(0.35),
-              shape: BoxShape.circle,
-            ),
-          ),
-          // Main icon
-          Icon(page.icon, size: 72, color: AppColors.black),
-          // Decorative floating icon
-          Positioned(
-            top: 28,
-            right: 28,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(page.decorIcon, size: 22, color: AppColors.charcoal),
-            ),
-          ),
-        ],
+      width: 240,
+      height: 240,
+      child: Image.asset(
+        page.imagePath,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -229,14 +185,12 @@ class _Illustration extends StatelessWidget {
 
 // ─── Data class ───────────────────────────────────
 class _PageData {
-  final IconData icon;
-  final IconData decorIcon;
+  final String imagePath;
   final String title;
   final String subtitle;
 
   const _PageData({
-    required this.icon,
-    required this.decorIcon,
+    required this.imagePath,
     required this.title,
     required this.subtitle,
   });
