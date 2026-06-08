@@ -1,4 +1,5 @@
 import 'connector_type_model.dart';
+import 'package:client/core/utils/dio_client.dart';
 
 class StationSummaryModel {
   final int stationId;
@@ -39,7 +40,7 @@ class StationSummaryModel {
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       openingHours: json['openingHours'],
-      imageUrl: json['imageUrl'],
+      imageUrl: DioClient.sanitizeUrl(json['imageUrl']),
       rating: (json['rating'] ?? 0.0).toDouble(),
       totalReviews: json['totalReviews'] ?? 0,
       distance: (json['distance'] ?? 0.0).toDouble(),

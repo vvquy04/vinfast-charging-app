@@ -1,3 +1,5 @@
+import 'package:client/core/utils/dio_client.dart';
+
 class StationHistoryModel {
   final int historyId;
   final int stationId;
@@ -23,7 +25,7 @@ class StationHistoryModel {
       stationId: json['stationId'] ?? 0,
       stationName: json['stationName'] ?? '',
       stationAddress: json['stationAddress'] ?? '',
-      stationImageUrl: json['stationImageUrl'],
+      stationImageUrl: DioClient.sanitizeUrl(json['stationImageUrl']),
       visitCount: json['visitCount'] ?? 1,
       lastVisited: json['lastVisited'] != null
           ? DateTime.parse(json['lastVisited'])

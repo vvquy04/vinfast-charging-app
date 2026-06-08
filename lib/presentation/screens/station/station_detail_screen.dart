@@ -188,7 +188,14 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
             foregroundColor: AppColors.black,
             flexibleSpace: FlexibleSpaceBar(
               background: detail.imageUrl != null
-                  ? Image.network(detail.imageUrl!, fit: BoxFit.cover)
+                  ? Image.network(
+                      detail.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: AppColors.smoke,
+                        child: const Icon(Icons.charging_station_rounded, size: 80, color: AppColors.lightGray),
+                      ),
+                    )
                   : Container(
                       color: AppColors.smoke,
                       child: const Icon(Icons.charging_station_rounded, size: 80, color: AppColors.lightGray),

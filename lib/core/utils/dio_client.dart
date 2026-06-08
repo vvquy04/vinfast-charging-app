@@ -42,4 +42,20 @@ class DioClient {
       ),
     );
   }
+
+  static String? sanitizeUrl(String? url) {
+    if (url == null) return null;
+    if (!kIsWeb) {
+      try {
+        final Uri baseUri = Uri.parse(baseUrl);
+        final String hostPort = "${baseUri.host}:${baseUri.port}";
+        return url
+            .replaceAll('localhost:8080', hostPort)
+            .replaceAll('127.0.0.1:8080', hostPort);
+      } catch (_) {
+        return url;
+      }
+    }
+    return url;
+  }
 }

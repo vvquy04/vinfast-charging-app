@@ -879,6 +879,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             child: Image.network(
                               station.imageUrl!,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.charging_station_rounded,
+                                color: AppColors.gray,
+                              ),
                             ),
                           )
                         : const Icon(

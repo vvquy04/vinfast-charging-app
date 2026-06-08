@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/history_provider.dart';
+import '../../providers/station_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -76,86 +77,117 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     );
                   }
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(AppSizes.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.silver.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                child: GestureDetector(
+                  onTap: () async {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (ctx) => const Center(
+                        child: CircularProgressIndicator(),
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: item.stationImageUrl != null
-                            ? Image.network(
-                                item.stationImageUrl!,
-                                width: 70,
-                                height: 70,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(
-                                width: 70,
-                                height: 70,
-                                color: AppColors.smoke,
-                                child: const Icon(Icons.charging_station_rounded, color: AppColors.lightGray),
-                              ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.stationName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.stationAddress,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.gray,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Đã xem: ${item.visitCount} lần',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  '${item.lastVisited.day}/${item.lastVisited.month}/${item.lastVisited.year}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.gray,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                    );
+                    try {
+                      await context.read<StationProvider>().fetchStationDetail(item.stationId);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/station_detail');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Không thể tải chi tiết trạm sạc: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSizes.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.silver.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: item.stationImageUrl != null
+                              ? Image.network(
+                                  item.stationImageUrl!,
+                                  width: 70,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    width: 70,
+                                    height: 70,
+                                    color: AppColors.smoke,
+                                    child: const Icon(Icons.charging_station_rounded, color: AppColors.lightGray),
+                                  ),
+                                )
+                              : Container(
+                                  width: 70,
+                                  height: 70,
+                                  color: AppColors.smoke,
+                                  child: const Icon(Icons.charging_station_rounded, color: AppColors.lightGray),
+                                ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.stationName,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                item.stationAddress,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.gray,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Đã xem: ${item.visitCount} lần',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item.lastVisited.day}/${item.lastVisited.month}/${item.lastVisited.year}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.gray,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
