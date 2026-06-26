@@ -3,13 +3,16 @@ import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:trackasia_gl/trackasia_gl.dart';
 import 'package:provider/provider.dart';
 import '../../providers/station_provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_sizes.dart';
-import '../../../core/widgets/app_button.dart';
+import 'helpers/map_marker_generator.dart';
+import 'widgets/station_filter_bottom_sheet.dart';
+import 'widgets/route_info_panel.dart';
+import 'widgets/station_preview_card.dart';
+import 'widgets/station_horizontal_list.dart';
+import 'widgets/search_suggestions_overlay.dart';
 
 class HomeMapScreen extends StatefulWidget {
   const HomeMapScreen({super.key});
@@ -110,10 +113,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
       // 2. Chuyển đổi tọa độ [lng, lat] thành List<LatLng>
       final List<LatLng> routePoints = coordinates
-          .map<LatLng>((coord) => LatLng(
-                (coord[1] as num).toDouble(),
-                (coord[0] as num).toDouble(),
-              ))
+          .map<LatLng>(
+            (coord) => LatLng(
+              (coord[1] as num).toDouble(),
+              (coord[0] as num).toDouble(),
+            ),
+          )
           .toList();
 
       if (routePoints.isEmpty) {
@@ -175,8 +180,13 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           ),
         );
         _mapController!.animateCamera(
-          CameraUpdate.newLatLngBounds(bounds,
-              left: 80, top: 120, right: 80, bottom: 240),
+          CameraUpdate.newLatLngBounds(
+            bounds,
+            left: 80,
+            top: 120,
+            right: 80,
+            bottom: 240,
+          ),
         );
       }
 
@@ -240,153 +250,24 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     _updateMarkers(provider);
   }
 
-  /// Create a colored circle icon for user marker
-  Future<Uint8List> _createUserMarkerImage() async {
-    const double size = 120;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // Pulse ring
-    final pulsePaint = Paint()
-      ..color = AppColors.primary.withOpacity(0.25)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(size / 2, size / 2), size / 2, pulsePaint);
-
-    // Outer dark border
-    final borderPaint = Paint()
-      ..color = AppColors.charcoal
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(size / 2, size / 2), 38, borderPaint);
-
-    // Inner white circle
-    final whitePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(size / 2, size / 2), 32, whitePaint);
-
-    // Letter "U"
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'U',
-        style: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: AppColors.black,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset((size - textPainter.width) / 2, (size - textPainter.height) / 2),
-    );
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
-
-  /// Create station marker icon
-  Future<Uint8List> _createStationMarkerImage(bool isAvailable) async {
-    const double width = 160;
-    const double height = 180;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // 1. Create teardrop pin shape (circle + triangle bottom)
-    final pinPath = Path();
-    pinPath.addOval(
-      Rect.fromCircle(center: const Offset(width / 2, 65), radius: 50),
-    );
-
-    final trianglePath = Path();
-    trianglePath.moveTo(width / 2 - 38, 97);
-    trianglePath.lineTo(width / 2, height - 12);
-    trianglePath.lineTo(width / 2 + 38, 97);
-    trianglePath.close();
-
-    final unifiedPath = Path.combine(PathOperation.union, pinPath, trianglePath);
-
-    // 2. Draw Shadow under the pin
-    canvas.drawPath(
-      unifiedPath.shift(const Offset(0, 6)),
-      Paint()
-        ..color = Colors.black.withOpacity(0.2)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-    );
-
-    // 3. Draw Background fill (Navy for Available, LightGray for Unavailable)
-    final bgPaint = Paint()
-      ..color = isAvailable ? AppColors.navy : AppColors.lightGray
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(unifiedPath, bgPaint);
-
-    // 4. Draw White border outline
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(unifiedPath, borderPaint);
-
-    // 5. Draw the preloaded Logo image inside a circular clip, centered in the pin
-    if (_logoImage != null) {
-      canvas.save();
-      
-      final logoClip = Path();
-      logoClip.addOval(
-        Rect.fromCircle(center: const Offset(width / 2, 65), radius: 38),
-      );
-      canvas.clipPath(logoClip);
-
-      canvas.drawImageRect(
-        _logoImage!,
-        Rect.fromLTWH(0, 0, _logoImage!.width.toDouble(), _logoImage!.height.toDouble()),
-        Rect.fromCircle(center: const Offset(width / 2, 65), radius: 38),
-        Paint(),
-      );
-      
-      canvas.restore();
-
-      // Draw thin white border around the logo circular mask
-      canvas.drawCircle(
-        const Offset(width / 2, 65),
-        38,
-        Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5,
-      );
-    }
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(width.toInt(), height.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
-
   Future<void> _addMarkerImages() async {
     if (_mapController == null) return;
 
-    // Load logo image asset once
-    try {
-      final byteData = await rootBundle.load('assets/images/logo.jpg');
-      final codec = await ui.instantiateImageCodec(byteData.buffer.asUint8List());
-      final frame = await codec.getNextFrame();
-      _logoImage = frame.image;
-    } catch (e) {
-      debugPrint('Error loading logo asset: $e');
-    }
+    _logoImage = await MapMarkerGenerator.loadLogoImage('assets/images/logo.jpg');
 
-    final userIcon = await _createUserMarkerImage();
+    final userIcon = await MapMarkerGenerator.createUserMarkerImage();
     await _mapController!.addImage('user-marker', userIcon);
 
-    final availableIcon = await _createStationMarkerImage(true);
+    final availableIcon = await MapMarkerGenerator.createStationMarkerImage(
+      isAvailable: true,
+      logoImage: _logoImage,
+    );
     await _mapController!.addImage('station-available', availableIcon);
 
-    final unavailableIcon = await _createStationMarkerImage(false);
+    final unavailableIcon = await MapMarkerGenerator.createStationMarkerImage(
+      isAvailable: false,
+      logoImage: _logoImage,
+    );
     await _mapController!.addImage('station-unavailable', unavailableIcon);
   }
 
@@ -466,10 +347,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       if (entry.value.id == symbol.id) {
         final stationId = entry.key;
         provider.fetchStationDetail(stationId);
-        
+
         // Find the station in the list to animate/zoom camera to its coordinates
         try {
-          final station = provider.stations.firstWhere((s) => s.stationId == stationId);
+          final station = provider.stations.firstWhere(
+            (s) => s.stationId == stationId,
+          );
           _mapController?.animateCamera(
             CameraUpdate.newLatLngZoom(
               LatLng(station.latitude, station.longitude),
@@ -504,9 +387,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     final target = _mapController!.cameraPosition?.target;
                     if (target != null) {
                       context.read<StationProvider>().updateSearchPosition(
-                            target.latitude,
-                            target.longitude,
-                          );
+                        target.latitude,
+                        target.longitude,
+                      );
                     }
                   }
                 },
@@ -526,7 +409,30 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   top: MediaQuery.of(context).padding.top + 20 + 56 + 8,
                   left: 20,
                   right: 20,
-                  child: _buildSearchSuggestions(provider),
+                  child: SearchSuggestionsOverlay(
+                    query: _searchController.text,
+                    stations: provider.stations,
+                    onStationTap: (station) {
+                      _isSelectingSuggestion = true;
+                      _searchController.text = station.name;
+                      _isSelectingSuggestion = false;
+                      setState(() {
+                        _showSuggestions = false;
+                      });
+                      FocusScope.of(context).unfocus();
+
+                      // Select the station in provider
+                      provider.fetchStationDetail(station.stationId);
+
+                      // Animate camera to selected station
+                      _mapController?.animateCamera(
+                        CameraUpdate.newLatLngZoom(
+                          LatLng(station.latitude, station.longitude),
+                          15.5,
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
               // ─── Floating Action Buttons right ─────────
@@ -623,9 +529,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                             SizedBox(width: 12),
                             Text(
@@ -648,8 +552,26 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 right: 0,
                 bottom: 20,
                 child: _isRouting
-                    ? _buildRouteInfoPanel()
-                    : _buildBottomOverlay(provider),
+                    ? RouteInfoPanel(
+                        routeDistance: _routeDistance,
+                        routeDuration: _routeDuration,
+                        routeDestinationName: _routeDestinationName,
+                        onCancel: _clearRoute,
+                      )
+                    : provider.selectedStationDetail != null
+                        ? StationPreviewCard(detail: provider.selectedStationDetail!)
+                        : StationHorizontalList(
+                            stations: provider.stations,
+                            onStationTap: (station) {
+                              provider.fetchStationDetail(station.stationId);
+                              _mapController?.animateCamera(
+                                CameraUpdate.newLatLngZoom(
+                                  LatLng(station.latitude, station.longitude),
+                                  14.5,
+                                ),
+                              );
+                            },
+                          ),
               ),
             ],
           );
@@ -695,11 +617,22 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               },
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(Icons.close_rounded, color: AppColors.lightGray, size: 20),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: AppColors.lightGray,
+                  size: 20,
+                ),
               ),
             ),
           GestureDetector(
-            onTap: () => _showFilterBottomSheet(context),
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const StationFilterBottomSheet(),
+              );
+            },
             child: Stack(
               children: [
                 Container(
@@ -729,759 +662,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                   ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchSuggestions(StationProvider provider) {
-    final query = _searchController.text.toLowerCase().trim();
-    if (query.isEmpty) return const SizedBox.shrink();
-
-    final filtered = provider.stations.where((station) {
-      return station.name.toLowerCase().contains(query) ||
-          station.address.toLowerCase().contains(query);
-    }).toList();
-
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 250),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: filtered.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Không tìm thấy trạm sạc nào',
-                style: TextStyle(color: AppColors.gray, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-            )
-          : ListView.separated(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              itemCount: filtered.length,
-              separatorBuilder: (context, index) => const Divider(
-                height: 1,
-                color: AppColors.smoke,
-              ),
-              itemBuilder: (context, index) {
-                final station = filtered[index];
-                return ListTile(
-                  leading: const Icon(
-                    Icons.ev_station_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(
-                    station.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    station.address,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.gray,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Text(
-                    '${station.distance} km',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.gray,
-                    ),
-                  ),
-                  onTap: () {
-                    _isSelectingSuggestion = true;
-                    _searchController.text = station.name;
-                    _isSelectingSuggestion = false;
-                    setState(() {
-                      _showSuggestions = false;
-                    });
-                    FocusScope.of(context).unfocus();
-
-                    // Select the station in provider
-                    provider.fetchStationDetail(station.stationId);
-
-                    // Animate camera to selected station
-                    _mapController?.animateCamera(
-                      CameraUpdate.newLatLngZoom(
-                        LatLng(station.latitude, station.longitude),
-                        15.5,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-    );
-  }
-
-  void _showFilterBottomSheet(BuildContext context) {
-    final provider = context.read<StationProvider>();
-
-    // Tạo biến tạm để người dùng chỉnh sửa trước khi Áp dụng
-    String? selectedConnector = provider.connectorType;
-    int? selectedPower = provider.minPowerKw;
-    double? selectedRating = provider.minRating;
-
-    final connectorOptions = ['AC', 'DC', 'CCS2', 'CHAdeMO', 'Type2'];
-    final powerOptions = [0, 7, 22, 50, 100, 150, 250, 350];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ─── Handle bar ────────────────────────
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.lightGray,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ─── Title ─────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Bộ lọc',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.black,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setModalState(() {
-                            selectedConnector = null;
-                            selectedPower = null;
-                            selectedRating = null;
-                          });
-                        },
-                        child: const Text(
-                          'Xóa bộ lọc',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // ─── Connector Type ────────────────────
-                  const Text(
-                    'Loại cổng sạc',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: connectorOptions.map((type) {
-                      final isSelected = selectedConnector == type;
-                      return GestureDetector(
-                        onTap: () {
-                          setModalState(() {
-                            selectedConnector = isSelected ? null : type;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.smoke,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            type,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? AppColors.white
-                                  : AppColors.black,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // ─── Min Power ─────────────────────────
-                  Text(
-                    'Công suất tối thiểu: ${selectedPower ?? 0} kW',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: powerOptions.map((kw) {
-                      final isSelected = (selectedPower ?? 0) == kw;
-                      return GestureDetector(
-                        onTap: () {
-                          setModalState(() {
-                            selectedPower = kw == 0 ? null : kw;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.smoke,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            kw == 0 ? 'Tất cả' : '≥ $kw kW',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? AppColors.white
-                                  : AppColors.black,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // ─── Min Rating ────────────────────────
-                  Text(
-                    'Đánh giá tối thiểu: ${selectedRating?.toStringAsFixed(0) ?? 'Tất cả'} ⭐',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: List.generate(5, (i) {
-                      final star = (i + 1).toDouble();
-                      final isSelected = (selectedRating ?? 0) >= star;
-                      return GestureDetector(
-                        onTap: () {
-                          setModalState(() {
-                            selectedRating = selectedRating == star
-                                ? null
-                                : star;
-                          });
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Icon(
-                            isSelected
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            color: isSelected
-                                ? Colors.amber
-                                : AppColors.lightGray,
-                            size: 36,
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // ─── Apply Button ──────────────────────
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        provider.applyFilters(
-                          connectorType: selectedConnector,
-                          minPowerKw: selectedPower,
-                          minRating: selectedRating,
-                        );
-                        Navigator.pop(ctx);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Áp dụng bộ lọc',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildBottomOverlay(StationProvider provider) {
-    if (provider.isLoading && provider.stations.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (provider.selectedStationDetail != null) {
-      final detail = provider.selectedStationDetail!;
-      // Bottom Sheet (Chi tiết trạm sạc)
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(AppSizes.lg),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        detail.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.black,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        detail.address,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.gray,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => provider.clearSelection(),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: AppColors.lightGray,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSizes.md),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Đang sử dụng',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(
-                  Icons.location_on_rounded,
-                  size: 14,
-                  color: AppColors.gray,
-                ),
-                const SizedBox(width: 4),
-                const Text(
-                  '1.9 km',
-                  style: TextStyle(fontSize: 13, color: AppColors.gray),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSizes.lg),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                text: 'Chi Tiết',
-                onPressed: () {
-                  Navigator.pushNamed(context, '/station_detail');
-                },
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Horizontal List (Danh sách trạm sạc)
-    if (provider.stations.isEmpty) return const SizedBox.shrink();
-
-    return SizedBox(
-      height: 140,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        scrollDirection: Axis.horizontal,
-        itemCount: provider.stations.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
-        itemBuilder: (context, index) {
-          final station = provider.stations[index];
-          return GestureDetector(
-            onTap: () {
-              provider.fetchStationDetail(station.stationId);
-              _mapController?.animateCamera(
-                CameraUpdate.newLatLngZoom(
-                  LatLng(station.latitude, station.longitude),
-                  14.5,
-                ),
-              );
-            },
-            child: Container(
-              width: 280,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.smoke,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: station.imageUrl != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              station.imageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => const Icon(
-                                Icons.charging_station_rounded,
-                                color: AppColors.gray,
-                              ),
-                            ),
-                          )
-                        : const Icon(
-                            Icons.charging_station_rounded,
-                            color: AppColors.gray,
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Cách ${station.distance.toStringAsFixed(1)} km',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.gray,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          station.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.black,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Cổng sạc sẵn có: ${station.connectorTypes.length}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// Panel hiển thị thông tin tuyến đường khi đang chỉ đường.
-  Widget _buildRouteInfoPanel() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(AppSizes.lg),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ─── Tiêu đề tuyến đường ────────────────
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF007AFF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.navigation_rounded,
-                  color: Color(0xFF007AFF),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Đang chỉ đường đến',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.gray,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _routeDestinationName ?? '',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.black,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: _clearRoute,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.smoke,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.close_rounded,
-                    color: AppColors.gray,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ─── Thông tin khoảng cách & thời gian ──
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppColors.smoke,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                // Khoảng cách
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.straighten_rounded,
-                        size: 20,
-                        color: Color(0xFF007AFF),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        children: [
-                          Text(
-                            _routeDistance ?? '--',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.black,
-                            ),
-                          ),
-                          const Text(
-                            'Khoảng cách',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.gray,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Divider
-                Container(
-                  width: 1,
-                  height: 36,
-                  color: AppColors.lightGray.withOpacity(0.5),
-                ),
-
-                // Thời gian
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.schedule_rounded,
-                        size: 20,
-                        color: Color(0xFF007AFF),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        children: [
-                          Text(
-                            _routeDuration ?? '--',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.black,
-                            ),
-                          ),
-                          const Text(
-                            'Thời gian dự kiến',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.gray,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // ─── Nút thoát chỉ đường ───────────────
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              text: 'Kết thúc chỉ đường',
-              onPressed: _clearRoute,
             ),
           ),
         ],
