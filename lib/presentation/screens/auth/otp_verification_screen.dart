@@ -197,12 +197,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(4, (i) {
-                  final bool hasFocus = _focusNodes[i].hasFocus;
                   final bool hasValue = _controllers[i].text.isNotEmpty;
                   return Container(
-                    width: 64,
-                    height: 64,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 56,
+                    height: 56,
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
                     child: RawKeyboardListener(
                       focusNode: FocusNode(),
                       onKey: (event) => _onKeyPressed(i, event),
@@ -216,7 +215,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                         ],
                         style: const TextStyle(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: AppColors.black,
                         ),
@@ -228,7 +227,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                               ? AppColors.smoke
                               : AppColors.white,
                           contentPadding: const EdgeInsets.symmetric(
-                            vertical: AppSizes.md,
+                            vertical: AppSizes.sm,
                           ),
                           border: OutlineInputBorder(
                             borderRadius:

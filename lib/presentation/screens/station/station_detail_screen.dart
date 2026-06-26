@@ -293,7 +293,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '${connector.totalPorts} trống',
+                              '${connector.totalPorts} cổng',
                               style: TextStyle(
                                   color: available ? AppColors.primary : AppColors.gray,
                                   fontWeight: FontWeight.bold),

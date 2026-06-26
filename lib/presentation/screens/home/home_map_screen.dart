@@ -45,9 +45,15 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   String? _routeDuration;
   String? _routeDestinationName;
 
+  // ─── Search state ──────────────────────────────
+  final TextEditingController _searchController = TextEditingController();
+  bool _showSuggestions = false;
+  bool _isSelectingSuggestion = false;
+
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StationProvider>().moveToCurrentLocation();
     });
@@ -55,8 +61,17 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     _mapController?.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_isSelectingSuggestion) return;
+    setState(() {
+      _showSuggestions = _searchController.text.trim().isNotEmpty;
+    });
   }
 
   // ─── Routing Methods ─────────────────────────────
@@ -484,6 +499,17 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 myLocationEnabled: false,
                 trackCameraPosition: true,
                 compassEnabled: false,
+                onCameraIdle: () {
+                  if (_mapController != null) {
+                    final target = _mapController!.cameraPosition?.target;
+                    if (target != null) {
+                      context.read<StationProvider>().updateSearchPosition(
+                            target.latitude,
+                            target.longitude,
+                          );
+                    }
+                  }
+                },
               ),
 
               // ─── Top Search Bar Overlay ────────────────
@@ -493,6 +519,15 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 right: 20,
                 child: _buildSearchBar(),
               ),
+
+              // ─── Search Suggestions Overlay ────────────
+              if (_showSuggestions)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 20 + 56 + 8,
+                  left: 20,
+                  right: 20,
+                  child: _buildSearchSuggestions(provider),
+                ),
 
               // ─── Floating Action Buttons right ─────────
               Positioned(
@@ -642,15 +677,27 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         children: [
           const Icon(Icons.search_rounded, color: AppColors.lightGray),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: TextField(
-              decoration: InputDecoration(
+              controller: _searchController,
+              decoration: const InputDecoration(
                 hintText: 'Tìm kiếm trạm sạc',
                 hintStyle: TextStyle(color: AppColors.lightGray),
                 border: InputBorder.none,
               ),
             ),
           ),
+          if (_searchController.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                _searchController.clear();
+                FocusScope.of(context).unfocus();
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.close_rounded, color: AppColors.lightGray, size: 20),
+              ),
+            ),
           GestureDetector(
             onTap: () => _showFilterBottomSheet(context),
             child: Stack(
@@ -686,6 +733,105 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSearchSuggestions(StationProvider provider) {
+    final query = _searchController.text.toLowerCase().trim();
+    if (query.isEmpty) return const SizedBox.shrink();
+
+    final filtered = provider.stations.where((station) {
+      return station.name.toLowerCase().contains(query) ||
+          station.address.toLowerCase().contains(query);
+    }).toList();
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 250),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: filtered.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Không tìm thấy trạm sạc nào',
+                style: TextStyle(color: AppColors.gray, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            )
+          : ListView.separated(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: filtered.length,
+              separatorBuilder: (context, index) => const Divider(
+                height: 1,
+                color: AppColors.smoke,
+              ),
+              itemBuilder: (context, index) {
+                final station = filtered[index];
+                return ListTile(
+                  leading: const Icon(
+                    Icons.ev_station_rounded,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(
+                    station.name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    station.address,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.gray,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Text(
+                    '${station.distance} km',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.gray,
+                    ),
+                  ),
+                  onTap: () {
+                    _isSelectingSuggestion = true;
+                    _searchController.text = station.name;
+                    _isSelectingSuggestion = false;
+                    setState(() {
+                      _showSuggestions = false;
+                    });
+                    FocusScope.of(context).unfocus();
+
+                    // Select the station in provider
+                    provider.fetchStationDetail(station.stationId);
+
+                    // Animate camera to selected station
+                    _mapController?.animateCamera(
+                      CameraUpdate.newLatLngZoom(
+                        LatLng(station.latitude, station.longitude),
+                        15.5,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 

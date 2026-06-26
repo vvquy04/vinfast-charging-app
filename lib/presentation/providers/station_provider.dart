@@ -41,7 +41,7 @@ class StationProvider with ChangeNotifier {
   double? _lastFetchedLongitude;
 
   // ─── Filter state ─────────────────────────────
-  double _radius = 50.0; // 50km để bao phủ toàn bộ Hà Nội (gồm Ba Vì, Sóc Sơn)
+  double _radius = 200.0; // 200km để bao phủ toàn bộ khu vực miền Bắc (gồm Quảng Ninh, Hải Phòng, Hà Nội)
   double get radius => _radius;
 
   String? _connectorType;
