@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trackasia_gl/trackasia_gl.dart';
@@ -36,6 +37,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   Symbol? _userSymbol;
   ui.Image? _logoImage;
 
+  // ─── Routing state ─────────────────────────────
+  Line? _routeLine;
+  bool _isRouting = false;
+  bool _isLoadingRoute = false;
+  String? _routeDistance;
+  String? _routeDuration;
+  String? _routeDestinationName;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +57,144 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   void dispose() {
     _mapController?.dispose();
     super.dispose();
+  }
+
+  // ─── Routing Methods ─────────────────────────────
+
+  /// Gọi TrackAsia Routing API v1 (OSRM) để lấy tuyến đường
+  /// và vẽ polyline trực tiếp lên bản đồ.
+  Future<void> _fetchAndDrawRoute({
+    required double startLat,
+    required double startLng,
+    required double endLat,
+    required double endLng,
+    required String destinationName,
+  }) async {
+    setState(() {
+      _isLoadingRoute = true;
+    });
+
+    try {
+      // 1. Gọi API TrackAsia Routing v1
+      final dio = Dio();
+      final url =
+          'https://maps.track-asia.com/route/v1/driving/$startLng,$startLat;$endLng,$endLat?key=public_key&geometries=geojson';
+
+      debugPrint('🧭 Gọi API chỉ đường: $url');
+      final response = await dio.get(url);
+
+      if (response.statusCode != 200 || response.data['code'] != 'Ok') {
+        throw Exception('Không tìm thấy tuyến đường');
+      }
+
+      final route = response.data['routes'][0];
+      final geometry = route['geometry'];
+      final coordinates = geometry['coordinates'] as List;
+      final distance = (route['distance'] as num).toDouble(); // mét
+      final duration = (route['duration'] as num).toDouble(); // giây
+
+      // 2. Chuyển đổi tọa độ [lng, lat] thành List<LatLng>
+      final List<LatLng> routePoints = coordinates
+          .map<LatLng>((coord) => LatLng(
+                (coord[1] as num).toDouble(),
+                (coord[0] as num).toDouble(),
+              ))
+          .toList();
+
+      if (routePoints.isEmpty) {
+        throw Exception('Tuyến đường trống');
+      }
+
+      // 3. Xóa tuyến đường cũ nếu có
+      if (_routeLine != null && _mapController != null) {
+        await _mapController!.removeLine(_routeLine!);
+        _routeLine = null;
+      }
+
+      // 4. Vẽ tuyến đường mới lên bản đồ
+      _routeLine = await _mapController?.addLine(
+        LineOptions(
+          geometry: routePoints,
+          lineColor: '#007AFF',
+          lineWidth: 5.0,
+          lineOpacity: 0.85,
+        ),
+      );
+
+      // 5. Cập nhật thông tin hiển thị
+      String distanceText;
+      if (distance >= 1000) {
+        distanceText = '${(distance / 1000).toStringAsFixed(1)} km';
+      } else {
+        distanceText = '${distance.toInt()} m';
+      }
+
+      String durationText;
+      final totalMinutes = (duration / 60).ceil();
+      if (totalMinutes >= 60) {
+        final hours = totalMinutes ~/ 60;
+        final mins = totalMinutes % 60;
+        durationText = '${hours}h ${mins} phút';
+      } else {
+        durationText = '$totalMinutes phút';
+      }
+
+      setState(() {
+        _isRouting = true;
+        _isLoadingRoute = false;
+        _routeDistance = distanceText;
+        _routeDuration = durationText;
+        _routeDestinationName = destinationName;
+      });
+
+      // 6. Zoom bản đồ để hiển thị toàn bộ tuyến đường
+      if (_mapController != null && routePoints.length >= 2) {
+        final bounds = LatLngBounds(
+          southwest: LatLng(
+            routePoints.map((p) => p.latitude).reduce((a, b) => a < b ? a : b),
+            routePoints.map((p) => p.longitude).reduce((a, b) => a < b ? a : b),
+          ),
+          northeast: LatLng(
+            routePoints.map((p) => p.latitude).reduce((a, b) => a > b ? a : b),
+            routePoints.map((p) => p.longitude).reduce((a, b) => a > b ? a : b),
+          ),
+        );
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngBounds(bounds,
+              left: 80, top: 120, right: 80, bottom: 240),
+        );
+      }
+
+      debugPrint('✅ Vẽ tuyến đường thành công: $distanceText, $durationText');
+    } catch (e) {
+      debugPrint('❌ Lỗi chỉ đường: $e');
+      setState(() {
+        _isLoadingRoute = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể tìm tuyến đường: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Xóa tuyến đường hiện tại và trở về trạng thái bình thường.
+  Future<void> _clearRoute() async {
+    if (_routeLine != null && _mapController != null) {
+      await _mapController!.removeLine(_routeLine!);
+    }
+    setState(() {
+      _routeLine = null;
+      _isRouting = false;
+      _isLoadingRoute = false;
+      _routeDistance = null;
+      _routeDuration = null;
+      _routeDestinationName = null;
+    });
   }
 
   void _onMapCreated(TrackAsiaMapController controller) {
@@ -373,21 +520,101 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                     const SizedBox(height: 10),
                     _FloatingButton(
-                      icon: Icons.directions_rounded,
+                      icon: _isRouting
+                          ? Icons.close_rounded
+                          : Icons.directions_rounded,
                       onTap: () {
-                        // TODO: Implement routing
+                        if (_isRouting) {
+                          // Đang chỉ đường → thoát chế độ chỉ đường
+                          _clearRoute();
+                          return;
+                        }
+
+                        final detail = provider.selectedStationDetail;
+                        if (detail == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Vui lòng chọn một trạm sạc trên bản đồ để chỉ đường',
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (provider.currentPosition == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Đang xác định vị trí của bạn, vui lòng thử lại sau',
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+
+                        _fetchAndDrawRoute(
+                          startLat: provider.currentPosition!.latitude,
+                          startLng: provider.currentPosition!.longitude,
+                          endLat: detail.latitude,
+                          endLng: detail.longitude,
+                          destinationName: detail.name,
+                        );
                       },
                     ),
                   ],
                 ),
               ),
 
+              // ─── Loading Route Indicator ────────────────
+              if (_isLoadingRoute)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 80,
+                  left: 0,
+                  right: 0,
+                  child: const Center(
+                    child: Card(
+                      elevation: 4,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Đang tìm tuyến đường...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
               // ─── Bottom UI Overlay ─────────────────────
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 20,
-                child: _buildBottomOverlay(provider),
+                child: _isRouting
+                    ? _buildRouteInfoPanel()
+                    : _buildBottomOverlay(provider),
               ),
             ],
           );
@@ -931,6 +1158,187 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Panel hiển thị thông tin tuyến đường khi đang chỉ đường.
+  Widget _buildRouteInfoPanel() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(AppSizes.lg),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ─── Tiêu đề tuyến đường ────────────────
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF007AFF).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.navigation_rounded,
+                  color: Color(0xFF007AFF),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Đang chỉ đường đến',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.gray,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _routeDestinationName ?? '',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.black,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: _clearRoute,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.smoke,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.gray,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ─── Thông tin khoảng cách & thời gian ──
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.smoke,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                // Khoảng cách
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.straighten_rounded,
+                        size: 20,
+                        color: Color(0xFF007AFF),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        children: [
+                          Text(
+                            _routeDistance ?? '--',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.black,
+                            ),
+                          ),
+                          const Text(
+                            'Khoảng cách',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.gray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Divider
+                Container(
+                  width: 1,
+                  height: 36,
+                  color: AppColors.lightGray.withOpacity(0.5),
+                ),
+
+                // Thời gian
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 20,
+                        color: Color(0xFF007AFF),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        children: [
+                          Text(
+                            _routeDuration ?? '--',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.black,
+                            ),
+                          ),
+                          const Text(
+                            'Thời gian dự kiến',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.gray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // ─── Nút thoát chỉ đường ───────────────
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              text: 'Kết thúc chỉ đường',
+              onPressed: _clearRoute,
+            ),
+          ),
+        ],
       ),
     );
   }
