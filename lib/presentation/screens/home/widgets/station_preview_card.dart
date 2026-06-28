@@ -205,8 +205,8 @@ class StationPreviewCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       _isCompatible
-                          ? '⚡ Tương thích với $userVehicleModel'
-                          : '⚠️ Không tương thích với $userVehicleModel',
+                          ? 'Tương thích với $userVehicleModel'
+                          : 'Không tương thích với $userVehicleModel',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

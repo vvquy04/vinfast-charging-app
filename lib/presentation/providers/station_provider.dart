@@ -253,10 +253,10 @@ class StationProvider with ChangeNotifier {
       }
       _lastFetchedLatitude = searchLat;
       _lastFetchedLongitude = searchLng;
-      debugPrint('✅ Tìm thấy ${data.length} trạm sạc');
+      debugPrint('Found ${data.length} charging stations');
     } catch (e) {
       _errorMessage = e.toString();
-      debugPrint('❌ Lỗi tìm trạm sạc: $e');
+      debugPrint('Error finding charging stations: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

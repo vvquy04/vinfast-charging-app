@@ -205,9 +205,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         );
       }
 
-      debugPrint('✅ Vẽ tuyến đường thành công: $distanceText, $durationText');
+      debugPrint('Route drawn successfully: $distanceText, $durationText');
     } catch (e) {
-      debugPrint('❌ Lỗi chỉ đường: $e');
+      debugPrint('Routing error: $e');
       setState(() {
         _isLoadingRoute = false;
       });
@@ -264,7 +264,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      debugPrint('❌ Lỗi mở bản đồ: $e');
+      debugPrint('Error opening map: $e');
     }
   }
 
