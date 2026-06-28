@@ -1,122 +1,152 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'core/utils/dio_client.dart';
+import 'data/services/auth_service.dart';
+import 'data/services/station_service.dart';
+import 'data/repositories/auth_repository.dart';
+import 'data/repositories/station_repository.dart';
+import 'presentation/providers/auth_provider.dart';
+import 'presentation/providers/station_provider.dart';
+import 'presentation/providers/review_provider.dart';
+import 'presentation/providers/profile_provider.dart';
+import 'presentation/providers/history_provider.dart';
+import 'data/services/review_service.dart';
+import 'data/services/user_service.dart';
+import 'data/services/upload_service.dart';
+import 'data/services/history_service.dart';
+import 'data/repositories/review_repository.dart';
+import 'data/repositories/user_repository.dart';
+import 'data/repositories/history_repository.dart';
+import 'core/constants/app_colors.dart';
+import 'presentation/screens/auth/splash_screen.dart';
+import 'presentation/screens/auth/walkthrough_screen.dart';
+import 'presentation/screens/auth/login_options_screen.dart';
+import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/screens/auth/phone_input_screen.dart';
+import 'presentation/screens/auth/otp_verification_screen.dart';
+import 'presentation/screens/auth/complete_profile_screen.dart';
+import 'presentation/screens/auth/add_vehicle_screen.dart';
+import 'presentation/screens/home/dashboard_screen.dart';
+import 'presentation/screens/station/station_detail_screen.dart';
+import 'presentation/screens/profile/change_password_screen.dart';
+import 'presentation/screens/auth/reset_password_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
+  // Tạo 1 DioClient duy nhất, chia sẻ cho tất cả services
+  final dioClient = DioClient();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(
+            AuthRepository(AuthService(dioClient)),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => StationProvider(
+            StationRepository(StationService(dioClient)),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReviewProvider(
+            ReviewRepository(ReviewService(dioClient)),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final userService = UserService(dioClient);
+            final uploadService = UploadService(dioClient);
+            final userRepo = UserRepository(userService, uploadService);
+            return ProfileProvider(userRepo);
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HistoryProvider(
+            HistoryRepository(HistoryService(dioClient)),
+          ),
+        ),
+      ],
+      child: const EVCPointApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class EVCPointApp extends StatelessWidget {
+  const EVCPointApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      title: 'EVCPoint',
+      debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('vi', 'VN'),
+      ],
+      locale: const Locale('vi', 'VN'),
+        theme: ThemeData(
+          brightness: Brightness.light,
+          scaffoldBackgroundColor: AppColors.white,
+          textTheme: GoogleFonts.interTextTheme(
+            ThemeData.light().textTheme,
+          ),
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.black,
+            onPrimary: AppColors.white,
+            surface: AppColors.white,
+            onSurface: AppColors.black,
+            error: AppColors.error,
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: AppColors.white,
+            foregroundColor: AppColors.black,
+            elevation: 0,
+            centerTitle: true,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
             ),
-          ],
+          ),
+          splashColor: AppColors.silver.withOpacity(0.3),
+          highlightColor: AppColors.silver.withOpacity(0.1),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+
+      // ─── Routes ──────────────────────────────────
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/walkthrough': (context) => const WalkthroughScreen(),
+        '/login-options': (context) => const LoginOptionsScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/signup/phone': (context) => const PhoneInputScreen(),
+        '/signup/otp': (context) => const OtpVerificationScreen(),
+        '/signup/profile': (context) => const CompleteProfileScreen(),
+        '/signup/vehicle': (context) => const AddVehicleScreen(),
+        '/home': (context) => const DashboardScreen(),
+        '/station_detail': (context) => const StationDetailScreen(),
+        '/change-password': (context) => const ChangePasswordScreen(),
+        '/reset-password': (context) => const ResetPasswordScreen(),
+      },
     );
   }
 }
