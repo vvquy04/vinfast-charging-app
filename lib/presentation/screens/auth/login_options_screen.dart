@@ -27,7 +27,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               // ─── Title ──────────────────────────
               const Text(
-                "Đăng nhập hệ thống",
+                "Đăng nhập",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -44,22 +44,6 @@ class LoginOptionsScreen extends StatelessWidget {
                 icon: _socialIcon('G', const Color(0xFFDB4437)),
                 onPressed: () {
                   // TODO: Implement Google sign-in
-                },
-              ),
-              const SizedBox(height: AppSizes.md),
-              AppSocialButton(
-                text: 'Tiếp tục với Facebook',
-                icon: _socialIcon('f', const Color(0xFF4267B2)),
-                onPressed: () {
-                  // TODO: Implement Facebook sign-in
-                },
-              ),
-              const SizedBox(height: AppSizes.md),
-              AppSocialButton(
-                text: 'Tiếp tục với Apple',
-                icon: const Icon(Icons.apple, size: 24, color: AppColors.black),
-                onPressed: () {
-                  // TODO: Implement Apple sign-in
                 },
               ),
 
@@ -88,7 +72,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               // ─── Sign In button ─────────────────
               AppButton(
-                text: 'Đăng nhập',
+                text: 'Đăng nhập bằng số điện thoại',
                 icon: Icons.login_rounded,
                 onPressed: () => Navigator.pushNamed(context, '/login'),
               ),
@@ -142,51 +126,15 @@ class LoginOptionsScreen extends StatelessWidget {
     );
   }
 
-  // ─── Illustration ───────────────────────────────
+  // ─── Illustration (Logo App) ────────────────────
   static Widget _buildIllustration() {
-    return SizedBox(
-      width: 200,
-      height: 200,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 180,
-            height: 180,
-            decoration: const BoxDecoration(
-              color: AppColors.smoke,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const Icon(
-            Icons.electric_car_rounded,
-            size: 80,
-            color: AppColors.black,
-          ),
-          Positioned(
-            top: 20,
-            right: 15,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                size: 20,
-                color: AppColors.charcoal,
-              ),
-            ),
-          ),
-        ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: Image.asset(
+        'assets/images/logo.jpg',
+        width: 150,
+        height: 150,
+        fit: BoxFit.cover,
       ),
     );
   }

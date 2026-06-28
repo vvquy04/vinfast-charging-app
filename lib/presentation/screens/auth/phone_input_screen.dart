@@ -44,6 +44,14 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     
     final success = await authProvider.sendOtp(formattedPhone);
     if (success && mounted) {
+      final otp = authProvider.lastSentOtp;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Mã OTP (Demo): $otp'),
+          duration: const Duration(seconds: 8),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       Navigator.pushNamed(context, '/signup/otp', arguments: formattedPhone);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

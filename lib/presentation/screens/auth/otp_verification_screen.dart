@@ -27,6 +27,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   int _countdown = 60;
   bool _canResend = false;
 
+  // SMS auto-detection simulation state
+  bool _isWaitingForSms = true;
+  String? _displayedOtp;
+  Timer? _smsSimulationTimer;
+
   String get _otp => _controllers.map((c) => c.text).join();
   bool get _isComplete => _otp.length == 4;
 
@@ -34,7 +39,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void initState() {
     super.initState();
     _startTimer();
-    // Auto-focus first field
+    _simulateSmsReceiving();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNodes[0].requestFocus();
     });
@@ -43,6 +48,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _smsSimulationTimer?.cancel();
     for (final c in _controllers) {
       c.dispose();
     }
@@ -66,6 +72,37 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
   }
 
+  void _simulateSmsReceiving() {
+    _smsSimulationTimer?.cancel();
+    setState(() {
+      _isWaitingForSms = true;
+      _displayedOtp = null;
+      for (final c in _controllers) {
+        c.clear();
+      }
+    });
+
+    // Simulate 2 seconds SMS delay
+    _smsSimulationTimer = Timer(const Duration(milliseconds: 2000), () {
+      if (!mounted) return;
+      final authProvider = context.read<AuthProvider>();
+      final lastOtp = authProvider.lastSentOtp;
+
+      setState(() {
+        _isWaitingForSms = false;
+        _displayedOtp = lastOtp;
+      });
+
+      if (lastOtp != null && lastOtp.length == 4) {
+        for (int i = 0; i < 4; i++) {
+          _controllers[i].text = lastOtp[i];
+        }
+        // Focus the last input box and hide keyboard, or keep focus on first
+        _focusNodes[3].requestFocus();
+      }
+    });
+  }
+
   void _resendOtp() async {
     if (!_canResend) return;
     
@@ -77,9 +114,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     
     if (success && mounted) {
       _startTimer();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('OTP sent successfully')),
-      );
+      _simulateSmsReceiving();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -261,7 +296,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 }),
               ),
 
-              const SizedBox(height: AppSizes.xl),
+              const SizedBox(height: AppSizes.lg),
+
+              // ─── SMS Simulation Status ──────────
+              Center(
+                child: _buildSmsStatusIndicator(),
+              ),
+
+              const SizedBox(height: AppSizes.lg),
 
               // ─── Resend ─────────────────────────
               Center(
@@ -309,6 +351,57 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSmsStatusIndicator() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        key: ValueKey<bool>(_isWaitingForSms),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: _isWaitingForSms
+              ? AppColors.smoke
+              : AppColors.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isWaitingForSms
+                ? AppColors.silver
+                : AppColors.primary.withOpacity(0.2),
+            width: 1.5,
+          ),
+        ),
+        child: _isWaitingForSms
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.black),
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.vpn_key_rounded,
+                    color: AppColors.black,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Mã OTP: $_displayedOtp',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

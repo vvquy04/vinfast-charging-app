@@ -10,11 +10,12 @@ class AuthRepository {
 
   AuthRepository(this._authService);
 
-  Future<void> sendOtp(String phoneNumber) async {
+  Future<String> sendOtp(String phoneNumber) async {
     final response = await _authService.sendOtp(phoneNumber);
     if (response['success'] != true) {
       throw Exception(response['message'] ?? 'Failed to send OTP');
     }
+    return response['data']?['otp'] as String? ?? '';
   }
 
   /// Returns true if it's a new user, false otherwise.

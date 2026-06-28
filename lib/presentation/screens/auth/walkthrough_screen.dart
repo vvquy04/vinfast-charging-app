@@ -27,15 +27,15 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     ),
     _PageData(
       imagePath: 'assets/images/walkthrough_charge.jpg',
-      title: 'Trải nghiệm sạc\nthông minh',
+      title: 'Lịch sử sạc\ntiện lợi',
       subtitle:
-          'Nhận đề xuất cá nhân hóa dựa trên mẫu xe và loại súng sạc ưu tiên của bạn.',
+          'Xem lại lịch sử trạm sạc gần đầy với đầy đủ thông tin',
     ),
     _PageData(
       imagePath: 'assets/images/walkthrough_review.jpg',
       title: 'Đánh giá & chia sẻ\ntừ cộng đồng',
       subtitle:
-          'Đọc đánh giá từ những người dùng EV khác và chia sẻ kinh nghiệm sạc của riêng bạn.',
+          'Đọc đánh giá từ những người dùng khác và chia sẻ kinh nghiệm sạc của riêng bạn.',
     ),
   ];
 

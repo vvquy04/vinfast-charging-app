@@ -10,6 +10,7 @@ class AuthProvider with ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _lastSentOtp;
 
   AuthProvider(this._repository) {
     // Optionally check if token exists to automatically restore session on app launch
@@ -19,6 +20,7 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? get lastSentOtp => _lastSentOtp;
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -34,7 +36,8 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     _setError(null);
     try {
-      await _repository.sendOtp(phoneNumber);
+      final otp = await _repository.sendOtp(phoneNumber);
+      _lastSentOtp = otp;
       _setLoading(false);
       return true;
     } catch (e) {
