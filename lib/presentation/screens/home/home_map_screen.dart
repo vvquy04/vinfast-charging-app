@@ -422,6 +422,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Consumer<StationProvider>(
         builder: (context, provider, child) {
           return Stack(

@@ -21,6 +21,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   String? _selectedConnector;
 
   static const List<String> _vehicles = [
+    'VF e34',
     'VF 3',
     'VF 5',
     'VF 6',
@@ -28,6 +29,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     'VF 8',
     'VF 9',
     'VF Wild',
+    'VF President',
     'Khác',
   ];
 

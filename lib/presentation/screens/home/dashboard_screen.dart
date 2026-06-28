@@ -6,7 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 import 'home_map_screen.dart';
-import '../profile/profile_screen.dart';
+import '../profile/account_screen.dart';
 import '../history/history_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -38,7 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   description: 'Vui lòng đăng nhập để lưu trữ và theo dõi các trạm sạc xe điện bạn đã quan tâm và tìm kiếm.',
                 ),
           isAuthenticated
-              ? const ProfileScreen()
+              ? const AccountScreen()
               : _buildLoginRequiredPlaceholder(
                   context,
                   icon: Icons.person_outline_rounded,

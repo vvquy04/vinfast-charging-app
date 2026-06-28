@@ -250,7 +250,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.md),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.silver)),
                   ),
-                  items: ['VF e34', 'VF 5', 'VF 6', 'VF 7', 'VF 8', 'VF 9', 'VF Wild', 'Khác'].map((String value) {
+                  items: ['VF e34', 'VF3', 'VF 5', 'VF 6', 'VF 7', 'VF 8', 'VF 9', 'VF Wild', 'VF President', 'Khác'].map((String value) {
                     return DropdownMenuItem<String>(value: value, child: Text(value));
                   }).toList(),
                   onChanged: (newValue) => setState(() => _vehicleModel = newValue),
