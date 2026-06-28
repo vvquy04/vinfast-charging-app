@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 
-/// Splash screen with animated EVCPoint logo and pulsing loading dots.
+/// Màn hình chào mừng với hiệu ứng logo EVCPoint và dấu chấm tải trang chuyển động.
 ///
-/// Automatically navigates to [/walkthrough] after 3 seconds.
+/// Tự động chuyển hướng sang màn hình giới thiệu [/walkthrough] sau 3 giây.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Transparent status bar
+    // Thanh trạng thái trong suốt
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Logo entrance animation
+    // Hiệu ứng xuất hiện của logo
     _logoController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _logoController, curve: Curves.easeOutBack),
     );
 
-    // Dots loop animation
+    // Hiệu ứng lặp của dấu chấm tải trang
     _dotsController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -53,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoController.forward();
 
-    // Auto-navigate
+    // Tự động điều hướng
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/walkthrough');

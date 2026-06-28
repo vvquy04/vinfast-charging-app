@@ -7,7 +7,7 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 
-/// Login screen — Email + Password authentication.
+/// Màn hình đăng nhập bằng số điện thoại và mật khẩu.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -62,10 +62,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.login('0$phone', password);
 
     if (success && mounted) {
-      // Navigate to home on success
+      // Chuyển hướng về trang chủ khi đăng nhập thành công
       Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
     } else if (mounted) {
-      // Show error snackbar
+      // Hiển thị thông báo lỗi
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.errorMessage ?? 'Đăng nhập thất bại'),
@@ -89,12 +89,12 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: AppSizes.md),
 
-              // ─── Back button ────────────────────
+              // ─── Nút quay lại ────────────────────
               _BackButton(onTap: () => Navigator.pop(context)),
 
               const SizedBox(height: AppSizes.xl),
 
-              // ─── Phone Input ────────────────────
+              // ─── Nhập số điện thoại ────────────────────
               const Text(
                 'Đăng nhập',
                 style: TextStyle(
@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: AppSizes.xxl),
 
-              // ─── Phone field ────────────────────
+              // ─── Trường số điện thoại ────────────────────
               AppTextField(
                 label: 'Số điện thoại',
                 hint: '901 234 567',
@@ -152,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: AppSizes.lg),
 
-              // ─── Password field ─────────────────
+              // ─── Trường mật khẩu ─────────────────
               AppTextField(
                 label: 'Mật khẩu',
                 hint: '••••••••',
@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: AppSizes.sm),
 
-              // ─── Forgot password ────────────────
+              // ─── Quên mật khẩu ─────────────────
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -199,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: AppSizes.lg),
 
-              // ─── Sign In button ─────────────────
+              // ─── Nút đăng nhập ─────────────────
               AppButton(
                 text: 'Đăng nhập',
                 isLoading: isLoading,
@@ -208,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: AppSizes.xl),
 
-              // ─── Sign Up link ───────────────────
+              // ─── Liên kết đăng ký ───────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -240,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ─── Shared back button ───────────────────────────
+// ─── Nút quay lại dùng chung ───────────────────────────
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
   const _BackButton({required this.onTap});

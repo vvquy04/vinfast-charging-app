@@ -4,9 +4,9 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_social_button.dart';
 
-/// Login options screen — "Let's you in".
+/// Màn hình lựa chọn đăng nhập.
 ///
-/// Shows social login buttons (mock), sign-in link, and sign-up link.
+/// Hiển thị các nút đăng nhập mạng xã hội (giả lập), liên kết đăng nhập và đăng ký.
 class LoginOptionsScreen extends StatelessWidget {
   const LoginOptionsScreen({super.key});
 
@@ -21,11 +21,11 @@ class LoginOptionsScreen extends StatelessWidget {
             children: [
               const Spacer(flex: 2),
 
-              // ─── Illustration ────────────────────
+              // ─── Hình minh họa ────────────────────
               _buildIllustration(),
               const SizedBox(height: AppSizes.lg),
 
-              // ─── Title ──────────────────────────
+              // ─── Tiêu đề ──────────────────────────
               const Text(
                 "Đăng nhập",
                 style: TextStyle(
@@ -38,18 +38,18 @@ class LoginOptionsScreen extends StatelessWidget {
 
               const Spacer(),
 
-              // ─── Social buttons ─────────────────
+              // ─── Các nút mạng xã hội ─────────────────
               AppSocialButton(
                 text: 'Tiếp tục với Google',
                 icon: _socialIcon('G', const Color(0xFFDB4437)),
                 onPressed: () {
-                  // TODO: Implement Google sign-in
+                  // TODO: Triển khai đăng nhập Google
                 },
               ),
 
               const SizedBox(height: AppSizes.lg),
 
-              // ─── Divider ────────────────────────
+              // ─── Đường kẻ phân cách ────────────────────────
               const Row(
                 children: [
                   Expanded(child: Divider(color: AppColors.silver)),
@@ -70,7 +70,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               const SizedBox(height: AppSizes.lg),
 
-              // ─── Sign In button ─────────────────
+              // ─── Nút đăng nhập ─────────────────
               AppButton(
                 text: 'Đăng nhập bằng số điện thoại',
                 icon: Icons.login_rounded,
@@ -79,7 +79,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               const SizedBox(height: AppSizes.lg),
 
-              // ─── Sign Up link ───────────────────
+              // ─── Liên kết đăng ký ───────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -104,7 +104,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               const SizedBox(height: AppSizes.md),
 
-              // ─── Guest explore link ──────────────
+              // ─── Liên kết khám phá cho khách ──────────────
               GestureDetector(
                 onTap: () => Navigator.pushReplacementNamed(context, '/home'),
                 child: const Text(
@@ -126,7 +126,7 @@ class LoginOptionsScreen extends StatelessWidget {
     );
   }
 
-  // ─── Illustration (Logo App) ────────────────────
+  // ─── Hình minh họa (Logo ứng dụng) ────────────────────
   static Widget _buildIllustration() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(32),
@@ -139,7 +139,7 @@ class LoginOptionsScreen extends StatelessWidget {
     );
   }
 
-  // ─── Social icon helper ─────────────────────────
+  // ─── Bộ trợ giúp icon mạng xã hội ─────────────────────────
   static Widget _socialIcon(String letter, Color color) {
     return Container(
       width: 24,

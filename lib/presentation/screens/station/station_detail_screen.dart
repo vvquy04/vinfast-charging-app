@@ -21,7 +21,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch reviews and record history after first build
+    // Tải danh sách đánh giá và ghi nhận lịch sử sau khi dựng giao diện xong
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final stationProvider = context.read<StationProvider>();
       final detail = stationProvider.selectedStationDetail;

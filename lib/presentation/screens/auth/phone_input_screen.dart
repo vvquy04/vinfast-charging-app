@@ -213,7 +213,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                         ),
                       ),
 
-                      // Error text
+                      // Thông báo lỗi
                       if (_phoneError != null) ...[
                         const SizedBox(height: AppSizes.xs),
                         Text(

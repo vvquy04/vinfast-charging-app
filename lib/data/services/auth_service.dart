@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../core/utils/dio_client.dart';
 
-/// Class containing raw API calls to backend endpoints.
+/// Lớp thực hiện các cuộc gọi API xác thực đến backend.
 class AuthService {
   final DioClient _dioClient;
 
@@ -17,9 +17,9 @@ class AuthService {
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to send OTP');
+        throw Exception(e.response?.data['message'] ?? 'Gửi OTP thất bại');
       } else {
-        throw Exception('Network error or server unreachable');
+        throw Exception('Lỗi kết nối mạng hoặc server không phản hồi');
       }
     }
   }
@@ -34,9 +34,9 @@ class AuthService {
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to verify OTP');
+        throw Exception(e.response?.data['message'] ?? 'Xác thực OTP thất bại');
       } else {
-        throw Exception('Network error or server unreachable');
+        throw Exception('Lỗi kết nối mạng hoặc server không phản hồi');
       }
     }
   }
@@ -54,9 +54,9 @@ class AuthService {
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Login failed');
+        throw Exception(e.response?.data['message'] ?? 'Đăng nhập thất bại');
       } else {
-        throw Exception('Network error or server unreachable');
+        throw Exception('Lỗi kết nối mạng hoặc server không phản hồi');
       }
     }
   }
@@ -91,9 +91,9 @@ class AuthService {
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Registration failed');
+        throw Exception(e.response?.data['message'] ?? 'Đăng ký thất bại');
       } else {
-        throw Exception('Network error or server unreachable');
+        throw Exception('Lỗi kết nối mạng hoặc server không phản hồi');
       }
     }
   }
@@ -112,9 +112,9 @@ class AuthService {
       return false;
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to check email');
+        throw Exception(e.response?.data['message'] ?? 'Không thể kiểm tra email');
       } else {
-        throw Exception('Network error or server unreachable');
+        throw Exception('Lỗi kết nối mạng hoặc server không phản hồi');
       }
     }
   }
@@ -137,9 +137,9 @@ class AuthService {
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to reset password');
+        throw Exception(e.response?.data['message'] ?? 'Đặt lại mật khẩu thất bại');
       } else {
-        throw Exception('Network error or server unreachable');
+        throw Exception('Lỗi kết nối mạng hoặc server không phản hồi');
       }
     }
   }
@@ -162,9 +162,9 @@ class AuthService {
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to change password');
+        throw Exception(e.response?.data['message'] ?? 'Đổi mật khẩu thất bại');
       } else {
-        throw Exception('Network error or server unreachable');
+        throw Exception('Lỗi kết nối mạng hoặc server không phản hồi');
       }
     }
   }

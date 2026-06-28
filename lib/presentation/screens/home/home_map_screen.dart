@@ -38,12 +38,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     zoom: 14.5,
   );
 
-  // Track symbols so we can update them
+  // Theo dõi các marker (symbols) để có thể cập nhật chúng
   final Map<int, Symbol> _stationSymbols = {};
   Symbol? _userSymbol;
   ui.Image? _logoImage;
 
-  // ─── Routing state ─────────────────────────────
+  // ─── Trạng thái vẽ tuyến đường ─────────────────────────────
   Line? _routeLine;
   bool _isRouting = false;
   bool _isLoadingRoute = false;
@@ -53,7 +53,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   double? _routeEndLat;
   double? _routeEndLng;
 
-  // ─── Search state ──────────────────────────────
+  // ─── Trạng thái tìm kiếm ──────────────────────────────
   final TextEditingController _searchController = TextEditingController();
   bool _showSuggestions = false;
   bool _isSelectingSuggestion = false;
@@ -90,7 +90,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     });
   }
 
-  // ─── Routing Methods ─────────────────────────────
+  // ─── Các phương thức vẽ đường ─────────────────────────────
 
   /// Gọi TrackAsia Routing API v1 (OSRM) để lấy tuyến đường
   /// và vẽ polyline trực tiếp lên bản đồ.
@@ -276,14 +276,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   void _onMapCreated(TrackAsiaMapController controller) {
     _mapController = controller;
-    // Register symbol tap handler on the controller
+    // Đăng ký bộ xử lý sự kiện nhấn vào symbol trên bản đồ
     _mapController!.onSymbolTapped.add(_onSymbolTapped);
   }
 
   void _onStyleLoaded() async {
     if (_mapController == null) return;
 
-    // Register custom images for markers
+    // Đăng ký các hình ảnh marker tùy chỉnh
     await _addMarkerImages();
 
     setState(() => _isMapReady = true);

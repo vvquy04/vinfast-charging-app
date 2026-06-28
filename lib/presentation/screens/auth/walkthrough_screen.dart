@@ -3,10 +3,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 
-/// Three-page walkthrough introducing app features.
+/// Màn hình giới thiệu gồm 3 trang về các tính năng của ứng dụng.
 ///
-/// Pages: Find Stations → Smart Charging → Community Reviews.
-/// Navigation: Skip → [/login-options], Next/Get Started → [/login-options].
+/// Các trang: Tìm trạm sạc → Quản lý sạc → Đánh giá từ cộng đồng.
+/// Điều hướng: Bỏ qua → [/login-options], Bắt đầu/Tiếp theo → [/login-options].
 class WalkthroughScreen extends StatefulWidget {
   const WalkthroughScreen({super.key});
 
@@ -67,7 +67,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Page content ──────────────────────
+            // ─── Nội dung trang ──────────────────────
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -113,7 +113,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
               ),
             ),
 
-            // ─── Page indicator ────────────────────
+            // ─── Chỉ số trang (Dots) ────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(_pages.length, (i) {
@@ -133,7 +133,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
             ),
             const SizedBox(height: AppSizes.xl),
 
-            // ─── Buttons ──────────────────────────
+            // ─── Nút điều khiển ──────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
               child: Row(
@@ -165,7 +165,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
   }
 }
 
-// ─── Illustration widget ──────────────────────────
+// ─── Widget hình minh họa ──────────────────────────
 class _Illustration extends StatelessWidget {
   final _PageData page;
   const _Illustration({required this.page});
@@ -183,7 +183,7 @@ class _Illustration extends StatelessWidget {
   }
 }
 
-// ─── Data class ───────────────────────────────────
+// ─── Lớp dữ liệu trang ───────────────────────────────────
 class _PageData {
   final String imagePath;
   final String title;

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class MapMarkerGenerator {
-  /// Load logo image asset once
+  /// Tải hình ảnh logo một lần
   static Future<ui.Image?> loadLogoImage(String assetPath) async {
     try {
       final byteData = await rootBundle.load(assetPath);
@@ -19,31 +19,31 @@ class MapMarkerGenerator {
     }
   }
 
-  /// Create a colored circle icon for user marker
+  /// Tạo hình ảnh marker hình tròn cho người dùng
   static Future<Uint8List> createUserMarkerImage() async {
     const double size = 120;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Pulse ring
+    // Hiệu ứng vòng tròn lan tỏa
     final pulsePaint = Paint()
       ..color = AppColors.primary.withOpacity(0.25)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(const Offset(size / 2, size / 2), size / 2, pulsePaint);
 
-    // Outer dark border
+    // Viền tối ngoài cùng
     final borderPaint = Paint()
       ..color = AppColors.charcoal
       ..style = PaintingStyle.fill;
     canvas.drawCircle(const Offset(size / 2, size / 2), 38, borderPaint);
 
-    // Inner white circle
+    // Vòng tròn trắng bên trong
     final whitePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
     canvas.drawCircle(const Offset(size / 2, size / 2), 32, whitePaint);
 
-    // Letter "U"
+    // Vẽ chữ "U" đại diện cho User
     final textPainter = TextPainter(
       text: const TextSpan(
         text: 'U',
@@ -67,7 +67,7 @@ class MapMarkerGenerator {
     return byteData!.buffer.asUint8List();
   }
 
-  /// Create station marker icon
+  /// Tạo hình ảnh marker cho trạm sạc
   static Future<Uint8List> createStationMarkerImage({
     required bool isAvailable,
     required ui.Image? logoImage,
@@ -77,7 +77,7 @@ class MapMarkerGenerator {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // 1. Create teardrop pin shape (circle + triangle bottom)
+    // 1. Tạo hình dạng ghim (hình tròn + tam giác phía dưới)
     final pinPath = Path();
     pinPath.addOval(
       Rect.fromCircle(center: const Offset(width / 2, 65), radius: 50),
@@ -95,7 +95,7 @@ class MapMarkerGenerator {
       trianglePath,
     );
 
-    // 2. Draw Shadow under the pin
+    // 2. Vẽ bóng dưới chân ghim
     canvas.drawPath(
       unifiedPath.shift(const Offset(0, 6)),
       Paint()
@@ -103,13 +103,13 @@ class MapMarkerGenerator {
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
 
-    // 3. Draw Background fill (Navy for Available, LightGray for Unavailable)
+    // 3. Vẽ nền (Xanh Navy nếu hoạt động, Xám nếu dừng hoạt động)
     final bgPaint = Paint()
       ..color = isAvailable ? AppColors.navy : AppColors.lightGray
       ..style = PaintingStyle.fill;
     canvas.drawPath(unifiedPath, bgPaint);
 
-    // 4. Draw White border outline
+    // 4. Vẽ viền màu trắng ngoài cùng
     final borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
@@ -117,7 +117,7 @@ class MapMarkerGenerator {
       ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(unifiedPath, borderPaint);
 
-    // 5. Draw the preloaded Logo image inside a circular clip, centered in the pin
+    // 5. Vẽ logo trạm sạc đã tải trước đó vào giữa ghim dưới dạng hình tròn
     if (logoImage != null) {
       canvas.save();
 
@@ -141,7 +141,7 @@ class MapMarkerGenerator {
 
       canvas.restore();
 
-      // Draw thin white border around the logo circular mask
+      // Vẽ viền trắng mỏng bao quanh logo
       canvas.drawCircle(
         const Offset(width / 2, 65),
         38,

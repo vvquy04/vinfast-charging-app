@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
-/// Centralized Dio client for the application.
-/// Provides configuration and interceptors to automatically inject JWT tokens.
+/// Cấu hình Dio Client dùng chung cho toàn bộ ứng dụng.
+/// Tự động đính kèm JWT token vào header của mỗi request.
 class DioClient {
   // Sử dụng localhost cho Web, URL ngrok cho máy thật Android
   static const String baseUrl = kIsWeb ? 'http://localhost:8080' : 'https://shimmer-itinerary-spilt.ngrok-free.dev';
@@ -24,7 +24,7 @@ class DioClient {
       ),
     );
 
-    // Request interceptor to attach JWT token
+    // Interceptor tự động đính kèm JWT token vào request
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -36,9 +36,9 @@ class DioClient {
           return handler.next(options);
         },
         onError: (DioException e, handler) async {
-          // TODO: Intercept 401 Unauthorized for token refresh logic
           return handler.next(e);
         },
+          
       ),
     );
   }

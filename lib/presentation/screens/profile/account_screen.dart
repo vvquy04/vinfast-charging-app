@@ -83,7 +83,7 @@ class _AccountScreenState extends State<AccountScreen> {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg, vertical: AppSizes.sm),
             children: [
-              // ─── USER PROFILE CARD ─────────────────
+              // ─── THẺ HỒ SƠ NGƯỜI DÙNG ─────────────────
               InkWell(
                 onTap: _navigateToProfile,
                 borderRadius: BorderRadius.circular(16),
@@ -141,7 +141,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
               const Divider(color: AppColors.smoke, thickness: 1, height: 24),
 
-              // ─── SETTINGS LIST ─────────────────────
+              // ─── DANH SÁCH CÀI ĐẶT ─────────────────────
               _buildSettingsItem(
                 icon: Icons.directions_car_filled_rounded,
                 title: 'Phương tiện của tôi',
@@ -193,7 +193,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 onTap: () => _showDevelopmentSnackBar('Về EVCPoint'),
               ),
 
-              // ─── LOGOUT ────────────────────────────
+              // ─── ĐĂNG XUẤT ────────────────────────────
               _buildSettingsItem(
                 icon: Icons.logout_rounded,
                 title: 'Đăng xuất',

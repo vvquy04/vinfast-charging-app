@@ -40,7 +40,7 @@ class StationProvider with ChangeNotifier {
   double? _lastFetchedLatitude;
   double? _lastFetchedLongitude;
 
-  // ─── Filter state ─────────────────────────────
+  // ─── Trạng thái bộ lọc ─────────────────────────────
   double _radius = 200.0; // 200km để bao phủ toàn bộ khu vực miền Bắc (gồm Quảng Ninh, Hải Phòng, Hà Nội)
   double get radius => _radius;
 
@@ -56,7 +56,7 @@ class StationProvider with ChangeNotifier {
   double? _minRating;
   double? get minRating => _minRating;
 
-  // ─── User vehicle state (auto-filter) ──────────
+  // ─── Trạng thái xe người dùng (tự động lọc) ──────────
   String? _userVehicleModel;
   String? get userVehicleModel => _userVehicleModel;
 

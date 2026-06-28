@@ -1,5 +1,5 @@
-/// Data transfer object for the application user.
-/// Maintains alignment with the backend `users` table schema and AuthResponse.
+/// Đối tượng truyền dữ liệu (DTO) cho người dùng ứng dụng.
+/// Đồng bộ cấu trúc với bảng users của backend và AuthResponse.
 class UserModel {
   final int? userId;
   final String phoneNumber;

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
-/// Main state management class for Authentication.
-/// Exposes currentUser and authorization status to the entire widget tree.
+/// Quản lý trạng thái xác thực (Authentication) của ứng dụng.
+/// Cung cấp thông tin người dùng hiện tại và trạng thái xác thực cho cây widget.
 class AuthProvider with ChangeNotifier {
   final AuthRepository _repository;
 
@@ -13,7 +13,7 @@ class AuthProvider with ChangeNotifier {
   String? _lastSentOtp;
 
   AuthProvider(this._repository) {
-    // Optionally check if token exists to automatically restore session on app launch
+    // Có thể cấu hình tự động khôi phục phiên đăng nhập tại đây nếu cần
   }
 
   UserModel? get currentUser => _currentUser;

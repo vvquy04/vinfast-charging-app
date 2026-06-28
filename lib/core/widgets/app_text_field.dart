@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 
-/// Reusable text field with label, error state, and consistent styling.
+/// Ô nhập liệu có nhãn, trạng thái lỗi và thiết kế đồng bộ.
 class AppTextField extends StatelessWidget {
   final String? label;
   final String? hint;

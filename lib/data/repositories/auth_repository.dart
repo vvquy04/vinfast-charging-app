@@ -2,8 +2,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
-/// Bridge between state management and raw services.
-/// Also stores tokens and configurations persistent within SharedPreferences.
+/// Cầu nối giữa quản lý trạng thái (State Management) và các dịch vụ gọi API.
+/// Hỗ trợ lưu trữ persistent token và cấu hình thông qua SharedPreferences.
 class AuthRepository {
   final AuthService _authService;
   static const String _tokenKey = 'access_token';
@@ -18,12 +18,11 @@ class AuthRepository {
     return response['data']?['otp'] as String? ?? '';
   }
 
-  /// Returns true if it's a new user, false otherwise.
+  /// Trả về true nếu là người dùng mới, false nếu đã tồn tại.
   Future<bool> verifyOtp(String phoneNumber, String otp) async {
     final response = await _authService.verifyOtp(phoneNumber, otp);
     if (response['success'] == true && response['data'] != null) {
       final data = response['data'];
-      // Jackson in Spring Boot converts 'boolean isNewUser' to 'newUser' in JSON mapping automatically!
       return data['isNewUser'] == true || data['newUser'] == true;
     } else {
       throw Exception(response['message'] ?? 'Failed to verify OTP');
@@ -33,12 +32,12 @@ class AuthRepository {
   Future<UserModel> login(String phoneNumber, String password) async {
     final response = await _authService.login(phoneNumber, password);
 
-    // Parse the standardized response: { "success": true, "data": { ...AuthResponse fields..., "token": "..." } }
+    // Phân tích phản hồi chuẩn: { "success": true, "data": { ... } }
     if (response['success'] == true && response['data'] != null) {
       final data = response['data'];
       final token = data['token'] as String;
 
-      // Save token locally
+      // Lưu token vào bộ nhớ thiết bị
       await saveToken(token);
 
       return UserModel.fromJson(Map<String, dynamic>.from(data));

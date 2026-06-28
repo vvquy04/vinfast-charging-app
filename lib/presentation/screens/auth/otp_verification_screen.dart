@@ -7,10 +7,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 
-/// Sign-up step 2 — OTP code verification.
+/// Bước đăng ký 2 — Xác thực mã OTP.
 ///
-/// Receives phone number via route arguments and displays 4-digit OTP input
-/// with auto-focus, countdown timer, and resend functionality.
+/// Nhận số điện thoại từ các tham số điều hướng và hiển thị ô nhập OTP gồm 4 số
+/// hỗ trợ tự động lấy nét, đếm ngược thời gian và gửi lại mã.
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({super.key});
 
@@ -27,7 +27,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   int _countdown = 60;
   bool _canResend = false;
 
-  // SMS auto-detection simulation state
+  // Trạng thái giả lập tự động nhận diện SMS
   bool _isWaitingForSms = true;
   String? _displayedOtp;
   Timer? _smsSimulationTimer;
@@ -82,7 +82,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       }
     });
 
-    // Simulate 2 seconds SMS delay
+    // Giả lập độ trễ nhận SMS là 2 giây
     _smsSimulationTimer = Timer(const Duration(milliseconds: 2000), () {
       if (!mounted) return;
       final authProvider = context.read<AuthProvider>();
@@ -97,7 +97,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         for (int i = 0; i < 4; i++) {
           _controllers[i].text = lastOtp[i];
         }
-        // Focus the last input box and hide keyboard, or keep focus on first
+        // Lấy nét ở ô nhập cuối cùng và ẩn bàn phím, hoặc giữ lấy nét ở ô đầu tiên
         _focusNodes[3].requestFocus();
       }
     });
@@ -168,7 +168,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (isNewUser != null && mounted) {
       if (isForgotPassword) {
         if (isNewUser) {
-          // New user, cannot reset password
+          // Người dùng mới, không thể đặt lại mật khẩu
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Số điện thoại chưa được đăng ký trong hệ thống.'),
@@ -176,11 +176,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ),
           );
         } else {
-          // Existing user, proceed to reset password
+          // Người dùng đã tồn tại, tiến hành đặt lại mật khẩu
           Navigator.pushNamed(context, '/reset-password', arguments: {'phoneNumber': phone});
         }
       } else {
-        // Normal registration flow
+        // Luồng đăng ký thông thường
         if (isNewUser) {
           Navigator.pushNamed(context, '/signup/profile', arguments: phone);
         } else {
@@ -231,12 +231,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     children: [
                       const SizedBox(height: AppSizes.md),
 
-                      // ─── Back button ────────────────────
+                      // ─── Nút quay lại ────────────────────
                       _BackButton(onTap: () => Navigator.pop(context)),
 
                       const SizedBox(height: AppSizes.xl),
 
-                      // ─── Header ─────────────────────────
+                      // ─── Tiêu đề ─────────────────────────
                       const Text(
                         'Xác nhận mã OTP 📧',
                         style: TextStyle(
@@ -272,12 +272,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                       const SizedBox(height: AppSizes.md),
 
-                      // ─── SMS Simulation Status (Below phone number) ───
+                      // ─── Trạng thái giả lập SMS (Bên dưới số điện thoại) ───
                       _buildSmsStatusIndicator(),
 
                       const SizedBox(height: AppSizes.xl),
 
-                      // ─── OTP Inputs ─────────────────────
+                      // ─── Các ô nhập OTP ─────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(4, (i) {
@@ -347,7 +347,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                       const SizedBox(height: AppSizes.lg),
 
-                      // ─── Resend ─────────────────────────
+                      // ─── Gửi lại mã ─────────────────────────
                       Center(
                         child: _canResend
                             ? Row(
@@ -382,7 +382,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                       const Spacer(),
 
-                      // ─── Continue button ────────────────
+                      // ─── Nút tiếp tục ────────────────
                       AppButton(
                         text: 'Tiếp tục',
                         isLoading: isLoading,
@@ -453,7 +453,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 }
 
-// ─── Back button ──────────────────────────────────
+// ─── Nút quay lại dùng chung ──────────────────────────────────
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
   const _BackButton({required this.onTap});
