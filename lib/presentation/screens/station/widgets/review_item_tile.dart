@@ -4,10 +4,14 @@ import '../../../../core/constants/app_colors.dart';
 
 class ReviewItemTile extends StatelessWidget {
   final ReviewModel review;
+  final bool isMyReview;
+  final VoidCallback? onDelete;
 
   const ReviewItemTile({
     super.key,
     required this.review,
+    this.isMyReview = false,
+    this.onDelete,
   });
 
   @override
@@ -28,10 +32,47 @@ class ReviewItemTile extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(review.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  Text(
-                    '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
-                    style: const TextStyle(color: AppColors.gray, fontSize: 12),
+                  Row(
+                    children: [
+                      Text(review.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      if (isMyReview) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Bạn',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
+                        style: const TextStyle(color: AppColors.gray, fontSize: 12),
+                      ),
+                      if (isMyReview && onDelete != null) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: onDelete,
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: AppColors.error,
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),

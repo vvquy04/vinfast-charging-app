@@ -177,7 +177,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         _avatarUrl = uploadedUrl;
       });
     } catch (e) {
-      debugPrint('Lỗi chọn ảnh đại diện: $e');
+      debugPrint('Error picking avatar: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Chọn hoặc tải ảnh lên thất bại')),

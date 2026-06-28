@@ -10,7 +10,6 @@ import '../../../providers/history_provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../station/widgets/add_review_bottom_sheet.dart';
 
 class HistoryDetailBottomSheet extends StatefulWidget {
   final StationHistoryModel item;
@@ -35,18 +34,33 @@ class _HistoryDetailBottomSheetState extends State<HistoryDetailBottomSheet> {
     });
   }
 
-  void _openAddReview(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddReviewBottomSheet(stationId: widget.item.stationId),
-    ).then((_) {
-      // Refresh reviews after returning from review dialog
-      if (context.mounted) {
-        context.read<ReviewProvider>().fetchReviews(widget.item.stationId);
-      }
+  Future<void> _navigateToStationDetailAndWrite() async {
+    setState(() {
+      _isLocalLoading = true;
     });
+    final stationProvider = context.read<StationProvider>();
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      await stationProvider.fetchStationDetail(widget.item.stationId);
+      if (mounted) {
+        navigator.pop(); // Đóng bottom sheet lịch sử
+        navigator.pushNamed('/station_detail'); // Chuyển hướng sang chi tiết trạm sạc
+      }
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Không thể tải chi tiết trạm sạc: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLocalLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -64,7 +78,7 @@ class _HistoryDetailBottomSheetState extends State<HistoryDetailBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─── Header ──────────────────────────────────────
+          // ─── Tiêu đề ──────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -80,7 +94,7 @@ class _HistoryDetailBottomSheetState extends State<HistoryDetailBottomSheet> {
           ),
           const SizedBox(height: AppSizes.md),
 
-          // ─── Station Basic Info Card ──────────────────────
+          // ─── Thẻ thông tin trạm sạc cơ bản ──────────────────────
           Row(
             children: [
               ClipRRect(
@@ -129,7 +143,7 @@ class _HistoryDetailBottomSheetState extends State<HistoryDetailBottomSheet> {
           const Divider(color: AppColors.smoke, height: 1),
           const SizedBox(height: AppSizes.lg),
 
-          // ─── My Review Section ────────────────────────────
+          // ─── Phần đánh giá của tôi ────────────────────────────
           const Text(
             'Đánh giá của bạn',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.charcoal),
@@ -144,19 +158,19 @@ class _HistoryDetailBottomSheetState extends State<HistoryDetailBottomSheet> {
                 );
               }
 
-              // Find the review written by current user
+              // Tìm đánh giá của người dùng hiện tại
               ReviewModel? myReview;
               if (currentUserId != null) {
                 try {
                   myReview = reviewProvider.reviews.firstWhere(
                     (r) => r.userId == currentUserId,
                   );
-                  // Tự động đồng bộ hóa trạng thái Đã bình luận nếu tìm thấy review
+                  // Tự động đồng bộ trạng thái Đã bình luận nếu tìm thấy đánh giá
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     context.read<HistoryProvider>().markAsReviewed(widget.item.stationId);
                   });
                 } catch (_) {
-                  // No review found
+                  // Không tìm thấy đánh giá
                 }
               }
 
@@ -232,7 +246,7 @@ class _HistoryDetailBottomSheetState extends State<HistoryDetailBottomSheet> {
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
-                      onPressed: () => _openAddReview(context),
+                      onPressed: _isLocalLoading ? null : _navigateToStationDetailAndWrite,
                       icon: const Icon(Icons.rate_review_outlined, size: 16),
                       label: const Text('Viết đánh giá ngay'),
                       style: OutlinedButton.styleFrom(
@@ -252,34 +266,11 @@ class _HistoryDetailBottomSheetState extends State<HistoryDetailBottomSheet> {
 
           const SizedBox(height: AppSizes.xl),
 
-          // ─── View Detail Button ──────────────────────────
+          // ─── Nút xem chi tiết trạm sạc ──────────────────────────
           AppButton(
             text: 'Xem chi tiết trạm sạc',
             isLoading: _isLocalLoading,
-            onPressed: () async {
-              setState(() {
-                _isLocalLoading = true;
-              });
-              try {
-                await context.read<StationProvider>().fetchStationDetail(widget.item.stationId);
-                if (context.mounted) {
-                  Navigator.pop(context); // Close bottom sheet
-                  Navigator.pushNamed(context, '/station_detail');
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Không thể tải chi tiết trạm sạc: $e')),
-                  );
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    _isLocalLoading = false;
-                  });
-                }
-              }
-            },
+            onPressed: _isLocalLoading ? null : _navigateToStationDetailAndWrite,
           ),
           const SizedBox(height: AppSizes.sm),
         ],

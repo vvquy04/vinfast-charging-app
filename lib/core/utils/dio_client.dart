@@ -47,11 +47,29 @@ class DioClient {
     if (url == null) return null;
     if (!kIsWeb) {
       try {
+        if (url.startsWith('http://localhost:8080') || url.startsWith('http://127.0.0.1:8080')) {
+          return url
+              .replaceAll('http://localhost:8080', baseUrl)
+              .replaceAll('http://127.0.0.1:8080', baseUrl);
+        }
+        if (url.startsWith('https://localhost:8080') || url.startsWith('https://127.0.0.1:8080')) {
+          return url
+              .replaceAll('https://localhost:8080', baseUrl)
+              .replaceAll('https://127.0.0.1:8080', baseUrl);
+        }
         final Uri baseUri = Uri.parse(baseUrl);
-        final String hostPort = "${baseUri.host}:${baseUri.port}";
-        return url
+        final String hostPort = (baseUri.port == 80 || baseUri.port == 443 || baseUri.port == 0)
+            ? baseUri.host
+            : "${baseUri.host}:${baseUri.port}";
+        
+        String sanitized = url
             .replaceAll('localhost:8080', hostPort)
             .replaceAll('127.0.0.1:8080', hostPort);
+            
+        if (baseUrl.startsWith('https://') && sanitized.startsWith('http://')) {
+          sanitized = sanitized.replaceFirst('http://', 'https://');
+        }
+        return sanitized;
       } catch (_) {
         return url;
       }

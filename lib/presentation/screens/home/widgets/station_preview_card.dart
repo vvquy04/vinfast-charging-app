@@ -98,7 +98,27 @@ class StationPreviewCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
+
+                    // Giờ mở cửa
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time_rounded, size: 12, color: AppColors.gray),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Giờ mở cửa: ${detail.openingHours ?? '24/7'}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.gray,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
 
                     // Rating + Reviews
                     _buildRating(),

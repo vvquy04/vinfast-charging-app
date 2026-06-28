@@ -111,7 +111,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       final url =
           'https://maps.track-asia.com/route/v1/car/$startLng,$startLat;$endLng,$endLat?key=public_key&geometries=geojson';
 
-      debugPrint('🧭 Gọi API chỉ đường: $url');
+      debugPrint('Calling routing API: $url');
       final response = await dio.get(url);
 
       if (response.statusCode != 200 || response.data['code'] != 'Ok') {

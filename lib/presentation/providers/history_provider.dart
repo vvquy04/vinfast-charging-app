@@ -40,7 +40,7 @@ class HistoryProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Lỗi tải danh sách đã bình luận: $e');
+      debugPrint('Error loading reviewed list: $e');
     }
   }
 
@@ -56,7 +56,7 @@ class HistoryProvider extends ChangeNotifier {
           _reviewedStationIds.map((id) => id.toString()).toList(),
         );
       } catch (e) {
-        debugPrint('Lỗi lưu danh sách đã bình luận: $e');
+        debugPrint('Error saving reviewed list: $e');
       }
     }
   }
@@ -73,7 +73,7 @@ class HistoryProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Lỗi tải danh sách yêu thích: $e');
+      debugPrint('Error loading favorites: $e');
     }
   }
 
@@ -94,7 +94,7 @@ class HistoryProvider extends ChangeNotifier {
         _favoriteStationIds.map((id) => id.toString()).toList(),
       );
     } catch (e) {
-      debugPrint('Lỗi lưu danh sách yêu thích: $e');
+      debugPrint('Error saving favorites: $e');
     }
   }
 
@@ -134,7 +134,7 @@ class HistoryProvider extends ChangeNotifier {
     try {
       await _repository.recordVisit(stationId);
     } catch (e) {
-      debugPrint('Lỗi ghi nhận lịch sử: $e');
+      debugPrint('Error recording history: $e');
     }
   }
 

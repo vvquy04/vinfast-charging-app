@@ -79,7 +79,7 @@ class StationProvider with ChangeNotifier {
       // 1. Kiểm tra GPS có bật không
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        debugPrint('📍 GPS chưa bật — Sử dụng vị trí mặc định (Hà Nội)');
+        debugPrint('GPS disabled - using default location (Hanoi)');
         _useDefaultLocationAndFetch();
         return;
       }
@@ -95,16 +95,16 @@ class StationProvider with ChangeNotifier {
       // 3. Nếu người dùng từ chối (denied hoặc deniedForever) → dùng vị trí mặc định
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        debugPrint('📍 Quyền vị trí bị từ chối — Sử dụng vị trí mặc định (Hà Nội)');
+        debugPrint('Location permission denied - using default location (Hanoi)');
         _useDefaultLocationAndFetch();
         return;
       }
 
       // 4. Đã được cấp quyền → lấy vị trí thật của người dùng
-      debugPrint('📍 Đã có quyền vị trí — Đang lấy vị trí thật...');
+      debugPrint('Location permission granted - fetching current location...');
       await moveToCurrentLocation();
     } catch (e) {
-      debugPrint('📍 Lỗi khởi tạo vị trí: $e — Sử dụng vị trí mặc định');
+      debugPrint('Error initializing location: $e - using default location');
       _useDefaultLocationAndFetch();
     }
   }
@@ -162,10 +162,10 @@ class StationProvider with ChangeNotifier {
       _lastFetchedLatitude = null;
       _lastFetchedLongitude = null;
 
-      debugPrint('📍 Vị trí thật: ${position.latitude}, ${position.longitude}');
+      debugPrint('Current location: ${position.latitude}, ${position.longitude}');
       await fetchNearbyStations();
     } catch (e) {
-      debugPrint('📍 Lỗi lấy vị trí: $e');
+      debugPrint('Error getting location: $e');
       // Nếu chưa có vị trí nào → dùng vị trí mặc định
       if (_currentPosition == null) {
         _useDefaultLocationAndFetch();
@@ -221,7 +221,7 @@ class StationProvider with ChangeNotifier {
         searchLng,
       );
       if (distanceMoved < 200) {
-        debugPrint('📍 Vị trí di chuyển quá nhỏ ($distanceMoved m) — Bỏ qua fetch API');
+        debugPrint('Movement too small ($distanceMoved m) - skipping API fetch');
         return;
       }
     }
@@ -231,7 +231,7 @@ class StationProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 Tìm trạm sạc: lat=$searchLat, lng=$searchLng, radius=$_radius km');
+      debugPrint('Searching charging stations: lat=$searchLat, lng=$searchLng, radius=$_radius km');
       
       final rawConnector = _isFilteringByVehicle ? (_connectorType ?? _userConnectorType) : _connectorType;
       final dbConnectorType = _mapToDbConnector(rawConnector);
