@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:trackasia_gl/trackasia_gl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/station_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import 'helpers/map_marker_generator.dart';
@@ -47,6 +49,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   String? _routeDistance;
   String? _routeDuration;
   String? _routeDestinationName;
+  double? _routeEndLat;
+  double? _routeEndLng;
 
   // ─── Search state ──────────────────────────────
   final TextEditingController _searchController = TextEditingController();
@@ -96,7 +100,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       // 1. Gọi API TrackAsia Routing v1
       final dio = Dio();
       final url =
-          'https://maps.track-asia.com/route/v1/driving/$startLng,$startLat;$endLng,$endLat?key=public_key&geometries=geojson';
+          'https://maps.track-asia.com/route/v1/car/$startLng,$startLat;$endLng,$endLat?key=public_key&geometries=geojson';
 
       debugPrint('🧭 Gọi API chỉ đường: $url');
       final response = await dio.get(url);
@@ -165,6 +169,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         _routeDistance = distanceText;
         _routeDuration = durationText;
         _routeDestinationName = destinationName;
+        _routeEndLat = endLat;
+        _routeEndLng = endLng;
       });
 
       // 6. Zoom bản đồ để hiển thị toàn bộ tuyến đường
@@ -219,7 +225,40 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       _routeDistance = null;
       _routeDuration = null;
       _routeDestinationName = null;
+      _routeEndLat = null;
+      _routeEndLng = null;
     });
+  }
+
+  void _launchExternalMap(double lat, double lng) async {
+    final String googleUrl =
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving';
+    final String appleUrl =
+        'https://maps.apple.com/?daddr=$lat,$lng&dirflg=d';
+
+    try {
+      if (Platform.isIOS) {
+        if (await canLaunchUrl(Uri.parse(appleUrl))) {
+          await launchUrl(Uri.parse(appleUrl), mode: LaunchMode.externalApplication);
+        } else if (await canLaunchUrl(Uri.parse(googleUrl))) {
+          await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication);
+        }
+      } else {
+        if (await canLaunchUrl(Uri.parse(googleUrl))) {
+          await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication);
+        } else {
+          throw 'Could not launch Google Maps';
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Lỗi mở bản đồ: $e');
+    }
+  }
+
+  void _startExternalNavigation() {
+    if (_routeEndLat != null && _routeEndLng != null) {
+      _launchExternalMap(_routeEndLat!, _routeEndLng!);
+    }
   }
 
   void _onMapCreated(TrackAsiaMapController controller) {
@@ -557,9 +596,28 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                         routeDuration: _routeDuration,
                         routeDestinationName: _routeDestinationName,
                         onCancel: _clearRoute,
+                        onStartNavigation: _startExternalNavigation,
                       )
                     : provider.selectedStationDetail != null
-                        ? StationPreviewCard(detail: provider.selectedStationDetail!)
+                        ? StationPreviewCard(
+                            detail: provider.selectedStationDetail!,
+                            onDirections: () {
+                              final pos = provider.currentPosition;
+                              final station = provider.selectedStationDetail!;
+                              if (pos != null) {
+                                provider.clearSelection();
+                                _fetchAndDrawRoute(
+                                  startLat: pos.latitude,
+                                  startLng: pos.longitude,
+                                  endLat: station.latitude,
+                                  endLng: station.longitude,
+                                  destinationName: station.name,
+                                );
+                              } else {
+                                _launchExternalMap(station.latitude, station.longitude);
+                              }
+                            },
+                          )
                         : StationHorizontalList(
                             stations: provider.stations,
                             onStationTap: (station) {

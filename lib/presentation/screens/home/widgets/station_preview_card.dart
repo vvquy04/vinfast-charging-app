@@ -3,129 +3,293 @@ import 'package:provider/provider.dart';
 import '../../../../data/models/station_detail_model.dart';
 import '../../../providers/station_provider.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/widgets/app_button.dart';
 
 class StationPreviewCard extends StatelessWidget {
   final StationDetailModel detail;
+  final VoidCallback? onDirections;
 
   const StationPreviewCard({
     super.key,
     required this.detail,
+    this.onDirections,
   });
 
   @override
   Widget build(BuildContext context) {
     final provider = context.read<StationProvider>();
-    final distanceText = '${provider.getDistanceToUser(detail.latitude, detail.longitude).toStringAsFixed(1)} km';
+    final distanceKm = provider
+        .getDistanceToUser(detail.latitude, detail.longitude)
+        .toStringAsFixed(1);
+
+    // Tổng số cổng sạc từ tất cả connector types
+    final totalPorts =
+        detail.connectorTypes.fold<int>(0, (sum, c) => sum + c.totalPorts);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(AppSizes.lg),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: AppColors.black.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ─── Row 1: Ảnh + Thông tin ──────────────────
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Ảnh trạm sạc
+              _buildImage(),
+              const SizedBox(width: 12),
+
+              // Thông tin trạm
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Tên trạm
                     Text(
                       detail.name,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: AppColors.black,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      detail.address,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.gray,
+                        height: 1.25,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
+
+                    // Địa chỉ
+                    Text(
+                      detail.address,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.gray,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Rating + Reviews
+                    _buildRating(),
                   ],
                 ),
               ),
+
+              // Nút đóng
               GestureDetector(
                 onTap: () => provider.clearSelection(),
                 child: Container(
                   padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.smoke,
+                    shape: BoxShape.circle,
+                  ),
                   child: const Icon(
                     Icons.close_rounded,
-                    color: AppColors.lightGray,
+                    color: AppColors.gray,
+                    size: 18,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.md),
+
+          const SizedBox(height: 12),
+
+          // ─── Row 2: Khoảng cách + Cổng sạc ─────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.smoke,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                // Khoảng cách
+                const Icon(
+                  Icons.location_on_rounded,
+                  size: 15,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$distanceKm km',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+
+                const SizedBox(width: 20),
+
+                // Cổng sạc
+                const Icon(
+                  Icons.ev_station_rounded,
+                  size: 15,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$totalPorts cổng sạc',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ─── Row 3: Hai nút hành động ───────────────
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.error,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Đang sử dụng',
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+              // Nút Chi tiết (viền)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/station_detail');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Chi tiết',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Icon(
-                Icons.location_on_rounded,
-                size: 14,
-                color: AppColors.gray,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                distanceText,
-                style: const TextStyle(fontSize: 13, color: AppColors.gray),
+
+              // Nút Chỉ đường (nền đậm)
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onDirections,
+                  icon: const Icon(Icons.directions_rounded, size: 18),
+                  label: const Text(
+                    'Chỉ đường',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.lg),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              text: 'Chi Tiết',
-              onPressed: () {
-                Navigator.pushNamed(context, '/station_detail');
-              },
-            ),
-          ),
         ],
       ),
+    );
+  }
+
+  // ─── Ảnh trạm sạc ──────────────────────────────────
+  Widget _buildImage() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        width: 90,
+        height: 90,
+        child: detail.imageUrl != null && detail.imageUrl!.isNotEmpty
+            ? Image.network(
+                detail.imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => _imagePlaceholder(),
+              )
+            : _imagePlaceholder(),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      color: AppColors.smoke,
+      child: const Center(
+        child: Icon(
+          Icons.charging_station_rounded,
+          color: AppColors.lightGray,
+          size: 36,
+        ),
+      ),
+    );
+  }
+
+  // ─── Rating stars ──────────────────────────────────
+  Widget _buildRating() {
+    return Row(
+      children: [
+        // Số điểm
+        Text(
+          detail.rating.toStringAsFixed(1),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppColors.charcoal,
+          ),
+        ),
+        const SizedBox(width: 4),
+
+        // Ngôi sao
+        ...List.generate(5, (index) {
+          final starValue = index + 1;
+          IconData icon;
+          if (detail.rating >= starValue) {
+            icon = Icons.star_rounded;
+          } else if (detail.rating >= starValue - 0.5) {
+            icon = Icons.star_half_rounded;
+          } else {
+            icon = Icons.star_border_rounded;
+          }
+          return Icon(
+            icon,
+            size: 16,
+            color: const Color(0xFFFFB800),
+          );
+        }),
+
+        const SizedBox(width: 4),
+
+        // Số reviews
+        Text(
+          '(${detail.totalReviews})',
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.gray,
+          ),
+        ),
+      ],
     );
   }
 }

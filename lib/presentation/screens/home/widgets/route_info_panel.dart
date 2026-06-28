@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/widgets/app_button.dart';
 
 class RouteInfoPanel extends StatelessWidget {
   final String? routeDistance;
   final String? routeDuration;
   final String? routeDestinationName;
   final VoidCallback onCancel;
+  final VoidCallback onStartNavigation;
 
   const RouteInfoPanel({
     super.key,
@@ -15,13 +14,14 @@ class RouteInfoPanel extends StatelessWidget {
     required this.routeDuration,
     required this.routeDestinationName,
     required this.onCancel,
+    required this.onStartNavigation,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(AppSizes.lg),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
@@ -40,8 +40,8 @@ class RouteInfoPanel extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: const Color(0xFF007AFF).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -92,14 +92,14 @@ class RouteInfoPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // ─── Thông tin khoảng cách & thời gian ──
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
             decoration: BoxDecoration(
               color: AppColors.smoke,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
@@ -180,15 +180,57 @@ class RouteInfoPanel extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
-          // ─── Nút thoát chỉ đường ───────────────
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              text: 'Kết thúc chỉ đường',
-              onPressed: onCancel,
-            ),
+          Row(
+            children: [
+              // Nút thoát chỉ đường (viền outlined)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onCancel,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.gray,
+                    side: const BorderSide(color: AppColors.lightGray, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Đóng',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Nút bắt đầu điều hướng (mở Google/Apple Maps)
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onStartNavigation,
+                  icon: const Icon(Icons.navigation_rounded, size: 18),
+                  label: const Text(
+                    'Bắt đầu đi',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

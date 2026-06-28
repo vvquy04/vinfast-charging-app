@@ -25,6 +25,10 @@ class StationHorizontalList extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final station = stations[index];
+          final totalPorts = station.connectorTypes.fold<int>(
+            0,
+            (sum, c) => sum + c.totalPorts,
+          );
           return GestureDetector(
             onTap: () => onStationTap(station),
             child: Container(
@@ -94,7 +98,7 @@ class StationHorizontalList extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Cổng sạc sẵn có: ${station.connectorTypes.length}',
+                          '$totalPorts cổng sạc',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.primary,
