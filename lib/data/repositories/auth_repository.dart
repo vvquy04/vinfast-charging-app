@@ -100,4 +100,18 @@ class AuthRepository {
   Future<bool> checkEmailExists(String email) async {
     return await _authService.checkEmailExists(email);
   }
+
+  Future<void> resetPassword(String phoneNumber, String newPassword, String confirmPassword) async {
+    final response = await _authService.resetPassword(phoneNumber, newPassword, confirmPassword);
+    if (response['success'] != true) {
+      throw Exception(response['message'] ?? 'Failed to reset password');
+    }
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword, String confirmPassword) async {
+    final response = await _authService.changePassword(currentPassword, newPassword, confirmPassword);
+    if (response['success'] != true) {
+      throw Exception(response['message'] ?? 'Failed to change password');
+    }
+  }
 }

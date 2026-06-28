@@ -137,6 +137,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                 ),
+                const SizedBox(height: AppSizes.md),
+                AppButton(
+                  text: 'Đổi mật khẩu',
+                  style: AppButtonStyle.outlined,
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/change-password');
+                  },
+                ),
               ],
             ),
           );

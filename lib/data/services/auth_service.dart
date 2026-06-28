@@ -118,4 +118,54 @@ class AuthService {
       }
     }
   }
+
+  /// POST /api/auth/reset-password
+  Future<Map<String, dynamic>> resetPassword(
+    String phoneNumber,
+    String newPassword,
+    String confirmPassword,
+  ) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/api/auth/reset-password',
+        data: {
+          'phoneNumber': phoneNumber,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to reset password');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
+
+  /// PUT /api/users/me/change-password
+  Future<Map<String, dynamic>> changePassword(
+    String currentPassword,
+    String newPassword,
+    String confirmPassword,
+  ) async {
+    try {
+      final response = await _dioClient.dio.put(
+        '/api/users/me/change-password',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to change password');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
 }

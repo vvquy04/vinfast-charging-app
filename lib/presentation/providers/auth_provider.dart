@@ -130,4 +130,32 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> resetPassword(String phoneNumber, String newPassword, String confirmPassword) async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      await _repository.resetPassword(phoneNumber, newPassword, confirmPassword);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setLoading(false);
+      _setError(e.toString().replaceAll('Exception: ', ''));
+      return false;
+    }
+  }
+
+  Future<bool> changePassword(String currentPassword, String newPassword, String confirmPassword) async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      await _repository.changePassword(currentPassword, newPassword, confirmPassword);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setLoading(false);
+      _setError(e.toString().replaceAll('Exception: ', ''));
+      return false;
+    }
+  }
 }

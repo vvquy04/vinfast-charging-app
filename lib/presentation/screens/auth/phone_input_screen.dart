@@ -50,10 +50,17 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
 
     final formattedPhone = '0$phone';
     final authProvider = context.read<AuthProvider>();
+
+    // Check if this is forgot password flow
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final isForgotPassword = args?['isForgotPassword'] == true;
     
     final success = await authProvider.sendOtp(formattedPhone);
     if (success && mounted) {
-      Navigator.pushNamed(context, '/signup/otp', arguments: formattedPhone);
+      Navigator.pushNamed(context, '/signup/otp', arguments: {
+        'phoneNumber': formattedPhone,
+        'isForgotPassword': isForgotPassword,
+      });
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -67,6 +74,9 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthProvider>().isLoading;
+
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final isForgotPassword = args?['isForgotPassword'] == true;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -91,9 +101,9 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                       const SizedBox(height: AppSizes.xl),
 
                       // ─── Header ─────────────────────────
-                      const Text(
-                        'Xin chào 👋',
-                        style: TextStyle(
+                      Text(
+                        isForgotPassword ? 'Quên mật khẩu 🔑' : 'Xin chào 👋',
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
                           color: AppColors.black,
@@ -101,9 +111,11 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                         ),
                       ),
                       const SizedBox(height: AppSizes.sm),
-                      const Text(
-                        'Vui lòng nhập số điện thoại. Bạn sẽ nhận được mã OTP ở bước tiếp theo để xác thực.',
-                        style: TextStyle(
+                      Text(
+                        isForgotPassword
+                            ? 'Vui lòng nhập số điện thoại đã đăng ký. Bạn sẽ nhận được mã OTP ở bước tiếp theo để xác thực đặt lại mật khẩu.'
+                            : 'Vui lòng nhập số điện thoại. Bạn sẽ nhận được mã OTP ở bước tiếp theo để xác thực.',
+                        style: const TextStyle(
                           fontSize: 15,
                           color: AppColors.gray,
                           height: 1.5,
@@ -213,85 +225,87 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                         ),
                       ],
 
-                      const SizedBox(height: AppSizes.lg),
+                      if (!isForgotPassword) ...[
+                        const SizedBox(height: AppSizes.lg),
 
-                      // ─── Terms checkbox ─────────────────
-                      GestureDetector(
-                        onTap: () =>
-                            setState(() => _agreedToTerms = !_agreedToTerms),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: _agreedToTerms
-                                    ? AppColors.black
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
+                        // ─── Terms checkbox ─────────────────
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _agreedToTerms = !_agreedToTerms),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
                                   color: _agreedToTerms
                                       ? AppColors.black
-                                      : AppColors.silver,
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: _agreedToTerms
-                                  ? const Icon(
-                                      Icons.check_rounded,
-                                      size: 16,
-                                      color: AppColors.white,
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: AppSizes.sm + 4),
-                            Expanded(
-                              child: Text.rich(
-                                TextSpan(
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    height: 1.4,
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: _agreedToTerms
+                                        ? AppColors.black
+                                        : AppColors.silver,
+                                    width: 1.5,
                                   ),
-                                  children: [
-                                    const TextSpan(
-                                      text: 'Tôi đồng ý với ',
-                                      style: TextStyle(color: AppColors.gray),
+                                ),
+                                child: _agreedToTerms
+                                    ? const Icon(
+                                        Icons.check_rounded,
+                                        size: 16,
+                                        color: AppColors.white,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: AppSizes.sm + 4),
+                              Expanded(
+                                child: Text.rich(
+                                  TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      height: 1.4,
                                     ),
-                                    TextSpan(
-                                      text: 'Thỏa thuận sử dụng',
-                                      style: TextStyle(
-                                        color: AppColors.black,
-                                        fontWeight: FontWeight.w600,
-                                        decoration: TextDecoration.underline,
-                                        decorationColor: AppColors.black.withOpacity(0.4),
+                                    children: [
+                                      const TextSpan(
+                                        text: 'Tôi đồng ý với ',
+                                        style: TextStyle(color: AppColors.gray),
                                       ),
-                                    ),
-                                    const TextSpan(
-                                      text: ',\n',
-                                      style: TextStyle(color: AppColors.gray),
-                                    ),
-                                    TextSpan(
-                                      text: 'Điều khoản',
-                                      style: TextStyle(
-                                        color: AppColors.black,
-                                        fontWeight: FontWeight.w600,
-                                        decoration: TextDecoration.underline,
-                                        decorationColor: AppColors.black.withOpacity(0.4),
+                                      TextSpan(
+                                        text: 'Thỏa thuận sử dụng',
+                                        style: TextStyle(
+                                          color: AppColors.black,
+                                          fontWeight: FontWeight.w600,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: AppColors.black.withOpacity(0.4),
+                                        ),
                                       ),
-                                    ),
-                                    const TextSpan(
-                                      text: ', và xác nhận tôi trên 17 tuổi.',
-                                      style: TextStyle(color: AppColors.gray),
-                                    ),
-                                  ],
+                                      const TextSpan(
+                                        text: ',\n',
+                                        style: TextStyle(color: AppColors.gray),
+                                      ),
+                                      TextSpan(
+                                        text: 'Điều khoản',
+                                        style: TextStyle(
+                                          color: AppColors.black,
+                                          fontWeight: FontWeight.w600,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: AppColors.black.withOpacity(0.4),
+                                        ),
+                                      ),
+                                      const TextSpan(
+                                        text: ', và xác nhận tôi trên 17 tuổi.',
+                                        style: TextStyle(color: AppColors.gray),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
 
                       const Spacer(),
 

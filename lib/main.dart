@@ -32,6 +32,8 @@ import 'presentation/screens/auth/complete_profile_screen.dart';
 import 'presentation/screens/auth/add_vehicle_screen.dart';
 import 'presentation/screens/home/dashboard_screen.dart';
 import 'presentation/screens/station/station_detail_screen.dart';
+import 'presentation/screens/profile/change_password_screen.dart';
+import 'presentation/screens/auth/reset_password_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -142,6 +144,8 @@ class EVCPointApp extends StatelessWidget {
         '/signup/vehicle': (context) => const AddVehicleScreen(),
         '/home': (context) => const DashboardScreen(),
         '/station_detail': (context) => const StationDetailScreen(),
+        '/change-password': (context) => const ChangePasswordScreen(),
+        '/reset-password': (context) => const ResetPasswordScreen(),
       },
     );
   }

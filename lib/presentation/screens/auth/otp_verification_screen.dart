@@ -106,7 +106,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _resendOtp() async {
     if (!_canResend) return;
     
-    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    String? phone;
+    if (args is Map<String, dynamic>) {
+      phone = args['phoneNumber'] as String?;
+    } else if (args is String) {
+      phone = args;
+    }
     if (phone == null) return;
 
     final authProvider = context.read<AuthProvider>();
@@ -145,22 +151,48 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _verify() async {
     if (!_isComplete) return;
 
-    final phone = ModalRoute.of(context)?.settings.arguments as String?;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    String? phone;
+    bool isForgotPassword = false;
+    if (args is Map<String, dynamic>) {
+      phone = args['phoneNumber'] as String?;
+      isForgotPassword = args['isForgotPassword'] == true;
+    } else if (args is String) {
+      phone = args;
+    }
     if (phone == null) return;
 
     final authProvider = context.read<AuthProvider>();
     final isNewUser = await authProvider.verifyOtp(phone, _otp);
 
-    if (isNewUser == true && mounted) {
-      Navigator.pushNamed(context, '/signup/profile', arguments: phone);
-    } else if (isNewUser == false && mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    if (isNewUser != null && mounted) {
+      if (isForgotPassword) {
+        if (isNewUser) {
+          // New user, cannot reset password
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Số điện thoại chưa được đăng ký trong hệ thống.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        } else {
+          // Existing user, proceed to reset password
+          Navigator.pushNamed(context, '/reset-password', arguments: {'phoneNumber': phone});
+        }
+      } else {
+        // Normal registration flow
+        if (isNewUser) {
+          Navigator.pushNamed(context, '/signup/profile', arguments: phone);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        }
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -174,8 +206,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthProvider>().isLoading;
-    final phone =
-        ModalRoute.of(context)?.settings.arguments as String? ?? '+84 ***';
+    final args = ModalRoute.of(context)?.settings.arguments;
+    String phone = '+84 ***';
+    if (args is Map<String, dynamic>) {
+      phone = args['phoneNumber'] as String? ?? '+84 ***';
+    } else if (args is String) {
+      phone = args;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.white,
