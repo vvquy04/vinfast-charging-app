@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 /// Centralized Dio client for the application.
 /// Provides configuration and interceptors to automatically inject JWT tokens.
 class DioClient {
-  // Sử dụng localhost cho Web, IP local cho máy thật Android (chung Wi-Fi)
-  static const String baseUrl = kIsWeb ? 'http://localhost:8080' : 'http://192.168.100.76:8080';
+  // Sử dụng localhost cho Web, URL ngrok cho máy thật Android
+  static const String baseUrl = kIsWeb ? 'http://localhost:8080' : 'https://shimmer-itinerary-spilt.ngrok-free.dev';
 
   late final Dio dio;
 
