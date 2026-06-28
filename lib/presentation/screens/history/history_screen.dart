@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/history_provider.dart';
-import '../../providers/station_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import 'widgets/history_item_card.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -26,20 +26,55 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.smoke,
       appBar: AppBar(
-        title: const Text('Lịch sử xem trạm'),
+        title: const Text(
+          'Lịch sử xem trạm',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         centerTitle: true,
+        elevation: 0,
+        backgroundColor: AppColors.white,
       ),
       body: Consumer<HistoryProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading && provider.historyList.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
 
           if (provider.historyList.isEmpty) {
-            return const Center(
-              child: Text(
-                'Bạn chưa xem trạm sạc nào.',
-                style: TextStyle(color: AppColors.gray, fontSize: 16),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                      color: AppColors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.history_rounded,
+                      size: 64,
+                      color: AppColors.lightGray,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Bạn chưa xem trạm sạc nào',
+                    style: TextStyle(
+                      color: AppColors.charcoal,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Lịch sử các trạm đã xem sẽ xuất hiện tại đây.',
+                    style: TextStyle(
+                      color: AppColors.gray,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             );
           }
@@ -50,146 +85,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
             separatorBuilder: (context, index) => const SizedBox(height: AppSizes.md),
             itemBuilder: (context, index) {
               final item = provider.historyList[index];
-              return Dismissible(
-                key: Key(item.historyId.toString()),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.delete_rounded, color: AppColors.white),
-                ),
-                onDismissed: (direction) async {
+              return HistoryItemCard(
+                item: item,
+                onDelete: () async {
                   final success = await provider.deleteHistory(item.historyId);
-                  if (success && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã xóa khỏi lịch sử')),
-                    );
-                  } else if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(provider.errorMessage ?? 'Xóa thất bại'),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
+                  if (success) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Đã xóa khỏi lịch sử'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(provider.errorMessage ?? 'Xóa thất bại'),
+                          backgroundColor: AppColors.error,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
                   }
                 },
-                child: GestureDetector(
-                  onTap: () async {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (ctx) => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                    try {
-                      await context.read<StationProvider>().fetchStationDetail(item.stationId);
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/station_detail');
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Không thể tải chi tiết trạm sạc: $e')),
-                        );
-                      }
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(AppSizes.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.silver.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: item.stationImageUrl != null
-                              ? Image.network(
-                                  item.stationImageUrl!,
-                                  width: 70,
-                                  height: 70,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    width: 70,
-                                    height: 70,
-                                    color: AppColors.smoke,
-                                    child: const Icon(Icons.charging_station_rounded, color: AppColors.lightGray),
-                                  ),
-                                )
-                              : Container(
-                                  width: 70,
-                                  height: 70,
-                                  color: AppColors.smoke,
-                                  child: const Icon(Icons.charging_station_rounded, color: AppColors.lightGray),
-                                ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.stationName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item.stationAddress,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.gray,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Đã xem: ${item.visitCount} lần',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${item.lastVisited.day}/${item.lastVisited.month}/${item.lastVisited.year}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.gray,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               );
             },
           );

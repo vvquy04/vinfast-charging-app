@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../../../providers/review_provider.dart';
+import '../../../providers/history_provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -97,6 +98,11 @@ class _AddReviewBottomSheetState extends State<AddReviewBottomSheet> {
                       _commentController.text.trim(),
                     );
                     if (success && context.mounted) {
+                      try {
+                        context.read<HistoryProvider>().markAsReviewed(widget.stationId);
+                      } catch (e) {
+                        debugPrint('Lỗi cập nhật lịch sử đánh giá: $e');
+                      }
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Đánh giá thành công!')),

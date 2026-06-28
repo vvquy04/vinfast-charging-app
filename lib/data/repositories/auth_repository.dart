@@ -96,4 +96,8 @@ class AuthRepository {
     final prefs = await SharedPreferences.getInstance();
     return prefs.containsKey(_tokenKey);
   }
+
+  Future<bool> checkEmailExists(String email) async {
+    return await _authService.checkEmailExists(email);
+  }
 }

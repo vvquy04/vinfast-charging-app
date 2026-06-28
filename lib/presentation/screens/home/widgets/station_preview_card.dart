@@ -7,12 +7,30 @@ import '../../../../core/constants/app_colors.dart';
 class StationPreviewCard extends StatelessWidget {
   final StationDetailModel detail;
   final VoidCallback? onDirections;
+  final String? userConnectorType;
+  final String? userVehicleModel;
 
   const StationPreviewCard({
     super.key,
     required this.detail,
     this.onDirections,
+    this.userConnectorType,
+    this.userVehicleModel,
   });
+
+  /// Kiểm tra trạm có loại súng sạc tương thích với xe người dùng không
+  bool get _isCompatible {
+    if (userConnectorType == null) return true;
+    final userClean = userConnectorType!.replaceAll(RegExp(r'\s*\([^)]*\)'), '').toLowerCase().trim();
+    return detail.connectorTypes.any((c) {
+      final stationClean = c.type.replaceAll(RegExp(r'\s*\([^)]*\)'), '').toLowerCase().trim();
+      if ((userClean == 'ac' || userClean == 'type2' || userClean == 'type 2') &&
+          (stationClean == 'ac' || stationClean == 'type2' || stationClean == 'type 2')) {
+        return true;
+      }
+      return stationClean == userClean;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,6 +172,54 @@ class StationPreviewCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // ─── Row 2.5: Nhãn tương thích ──────────────
+          if (userConnectorType != null && userVehicleModel != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: _isCompatible
+                    ? const Color(0xFFE8F5E9)
+                    : const Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _isCompatible
+                      ? const Color(0xFF66BB6A)
+                      : const Color(0xFFFFB74D),
+                  width: 0.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _isCompatible
+                        ? Icons.check_circle_rounded
+                        : Icons.warning_rounded,
+                    size: 16,
+                    color: _isCompatible
+                        ? const Color(0xFF43A047)
+                        : const Color(0xFFF57C00),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _isCompatible
+                          ? '⚡ Tương thích với $userVehicleModel'
+                          : '⚠️ Không tương thích với $userVehicleModel',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _isCompatible
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFFE65100),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           const SizedBox(height: 12),
 

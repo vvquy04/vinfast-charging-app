@@ -45,6 +45,9 @@ dependencies:
   trackasia_gl_platform_interface: 2.0.2
   google_fonts: ^8.1.0
   url_launcher: ^6.3.2
+  flutter_localizations:
+    sdk: flutter
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

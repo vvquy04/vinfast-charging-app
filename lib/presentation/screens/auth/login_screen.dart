@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ─── Phone Input ────────────────────
               const Text(
-                'Số điện thoại',
+                'Đăng nhập',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -218,7 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pushReplacementNamed(
-                        context, '/login-options'),
+                        context, '/signup/phone'),
                     child: const Text(
                       'Đăng ký',
                       style: TextStyle(

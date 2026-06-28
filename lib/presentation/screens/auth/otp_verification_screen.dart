@@ -180,176 +180,185 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSizes.md),
-
-              // ─── Back button ────────────────────
-              _BackButton(onTap: () => Navigator.pop(context)),
-
-              const SizedBox(height: AppSizes.xl),
-
-              // ─── Header ─────────────────────────
-              const Text(
-                'Xác nhận mã OTP 📧',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.black,
-                  letterSpacing: -0.3,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
                 ),
-              ),
-              const SizedBox(height: AppSizes.sm),
-              Text.rich(
-                TextSpan(
-                  text: 'Chúng tôi đã gửi mã OTP tới số ',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.gray,
-                    height: 1.5,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: phone,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.black,
-                      ),
-                    ),
-                    const TextSpan(
-                      text: '.\nNhập mã OTP vào bên dưới để tiếp tục.',
-                    ),
-                  ],
-                ),
-              ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: AppSizes.md),
 
-              const SizedBox(height: AppSizes.xxl),
+                      // ─── Back button ────────────────────
+                      _BackButton(onTap: () => Navigator.pop(context)),
 
-              // ─── OTP Inputs ─────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (i) {
-                  final bool hasValue = _controllers[i].text.isNotEmpty;
-                  return Container(
-                    width: 56,
-                    height: 56,
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    child: RawKeyboardListener(
-                      focusNode: FocusNode(),
-                      onKey: (event) => _onKeyPressed(i, event),
-                      child: TextField(
-                        controller: _controllers[i],
-                        focusNode: _focusNodes[i],
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        style: const TextStyle(
-                          fontSize: 22,
+                      const SizedBox(height: AppSizes.xl),
+
+                      // ─── Header ─────────────────────────
+                      const Text(
+                        'Xác nhận mã OTP 📧',
+                        style: TextStyle(
+                          fontSize: 28,
                           fontWeight: FontWeight.w700,
                           color: AppColors.black,
+                          letterSpacing: -0.3,
                         ),
-                        cursorColor: AppColors.black,
-                        decoration: InputDecoration(
-                          counterText: '',
-                          filled: true,
-                          fillColor: hasValue
-                              ? AppColors.smoke
-                              : AppColors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: AppSizes.sm,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusMd),
-                            borderSide:
-                                const BorderSide(color: AppColors.silver),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusMd),
-                            borderSide: BorderSide(
-                              color: hasValue
-                                  ? AppColors.black
-                                  : AppColors.silver,
-                              width: hasValue ? 1.5 : 1,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSizes.radiusMd),
-                            borderSide: const BorderSide(
-                              color: AppColors.black,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        onChanged: (v) => _onDigitChanged(i, v),
                       ),
-                    ),
-                  );
-                }),
-              ),
-
-              const SizedBox(height: AppSizes.lg),
-
-              // ─── SMS Simulation Status ──────────
-              Center(
-                child: _buildSmsStatusIndicator(),
-              ),
-
-              const SizedBox(height: AppSizes.lg),
-
-              // ─── Resend ─────────────────────────
-              Center(
-                child: _canResend
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Chưa nhận được mã? ",
-                            style:
-                                TextStyle(fontSize: 14, color: AppColors.gray),
+                      const SizedBox(height: AppSizes.sm),
+                      Text.rich(
+                        TextSpan(
+                          text: 'Chúng tôi đã gửi mã OTP tới số ',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: AppColors.gray,
+                            height: 1.5,
                           ),
-                          GestureDetector(
-                            onTap: _resendOtp,
-                            child: const Text(
-                              'Gửi lại',
-                              style: TextStyle(
-                                fontSize: 14,
+                          children: [
+                            TextSpan(
+                              text: phone,
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.gray,
+                                color: AppColors.black,
                               ),
                             ),
-                          ),
-                        ],
-                      )
-                    : Text(
-                        'Bạn có thể gửi lại mã sau ${_countdown}s',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.gray,
+                            const TextSpan(
+                              text: '.\nNhập mã OTP vào bên dưới để tiếp tục.',
+                            ),
+                          ],
                         ),
                       ),
+
+                      const SizedBox(height: AppSizes.md),
+
+                      // ─── SMS Simulation Status (Below phone number) ───
+                      _buildSmsStatusIndicator(),
+
+                      const SizedBox(height: AppSizes.xl),
+
+                      // ─── OTP Inputs ─────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(4, (i) {
+                          final bool hasValue = _controllers[i].text.isNotEmpty;
+                          return Container(
+                            width: 56,
+                            height: 56,
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            child: RawKeyboardListener(
+                              focusNode: FocusNode(),
+                              onKey: (event) => _onKeyPressed(i, event),
+                              child: TextField(
+                                controller: _controllers[i],
+                                focusNode: _focusNodes[i],
+                                textAlign: TextAlign.center,
+                                keyboardType: TextInputType.number,
+                                maxLength: 1,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.black,
+                                ),
+                                cursorColor: AppColors.black,
+                                decoration: InputDecoration(
+                                  counterText: '',
+                                  filled: true,
+                                  fillColor: hasValue
+                                      ? AppColors.smoke
+                                      : AppColors.white,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: AppSizes.sm,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppSizes.radiusMd),
+                                    borderSide:
+                                        const BorderSide(color: AppColors.silver),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppSizes.radiusMd),
+                                    borderSide: BorderSide(
+                                      color: hasValue
+                                          ? AppColors.black
+                                          : AppColors.silver,
+                                      width: hasValue ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppSizes.radiusMd),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.black,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                onChanged: (v) => _onDigitChanged(i, v),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+
+                      const SizedBox(height: AppSizes.lg),
+
+                      // ─── Resend ─────────────────────────
+                      Center(
+                        child: _canResend
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    "Chưa nhận được mã? ",
+                                    style:
+                                        TextStyle(fontSize: 14, color: AppColors.gray),
+                                  ),
+                                  GestureDetector(
+                                    onTap: _resendOtp,
+                                    child: const Text(
+                                      'Gửi lại',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.gray,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                'Bạn có thể gửi lại mã sau ${_countdown}s',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.gray,
+                                ),
+                              ),
+                      ),
+
+                      const Spacer(),
+
+                      // ─── Continue button ────────────────
+                      AppButton(
+                        text: 'Tiếp tục',
+                        isLoading: isLoading,
+                        onPressed: _isComplete && !isLoading ? _verify : null,
+                      ),
+
+                      const SizedBox(height: AppSizes.xl),
+                    ],
+                  ),
+                ),
               ),
-
-              const Spacer(),
-
-              // ─── Continue button ────────────────
-              AppButton(
-                text: 'Tiếp tục',
-                isLoading: isLoading,
-                onPressed: _isComplete && !isLoading ? _verify : null,
-              ),
-
-              const SizedBox(height: AppSizes.xl),
-            ],
-          ),
+            );
+          }
         ),
       ),
     );

@@ -34,7 +34,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final profile = context.read<ProfileProvider>().profile;
     _nameController = TextEditingController(text: profile?.fullName);
     _emailController = TextEditingController(text: profile?.email);
-    _gender = profile?.gender;
+    
+    // Đồng bộ và chuyển đổi các giá trị cũ MALE/FEMALE sang Nam/Nữ
+    if (profile?.gender == 'MALE') {
+      _gender = 'Nam';
+    } else if (profile?.gender == 'FEMALE') {
+      _gender = 'Nữ';
+    } else if (profile?.gender == 'OTHER') {
+      _gender = 'Khác';
+    } else {
+      _gender = profile?.gender;
+    }
+    
     _dateOfBirth = profile?.dateOfBirth;
     _vehicleModel = profile?.vehicleModel;
     _connectorType = profile?.connectorType;
@@ -239,7 +250,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.md),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.silver)),
                   ),
-                  items: ['VF e34', 'VF 5', 'VF 6', 'VF 7', 'VF 8', 'VF 9'].map((String value) {
+                  items: ['VF e34', 'VF 5', 'VF 6', 'VF 7', 'VF 8', 'VF 9', 'VF Wild', 'Khác'].map((String value) {
                     return DropdownMenuItem<String>(value: value, child: Text(value));
                   }).toList(),
                   onChanged: (newValue) => setState(() => _vehicleModel = newValue),
@@ -257,7 +268,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.md),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.silver)),
                   ),
-                  items: ['CCS2', 'Type 2'].map((String value) {
+                  items: ['CCS2 (DC)', 'Type 2 (AC)', 'CHAdeMO'].map((String value) {
                     return DropdownMenuItem<String>(value: value, child: Text(value));
                   }).toList(),
                   onChanged: (newValue) => setState(() => _connectorType = newValue),

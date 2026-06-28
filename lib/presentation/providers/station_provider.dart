@@ -50,12 +50,25 @@ class StationProvider with ChangeNotifier {
   int? _minPowerKw;
   int? get minPowerKw => _minPowerKw;
 
+  int? _maxPowerKw;
+  int? get maxPowerKw => _maxPowerKw;
+
   double? _minRating;
   double? get minRating => _minRating;
 
+  // ─── User vehicle state (auto-filter) ──────────
+  String? _userVehicleModel;
+  String? get userVehicleModel => _userVehicleModel;
+
+  String? _userConnectorType;
+  String? get userConnectorType => _userConnectorType;
+
+  bool _isFilteringByVehicle = false;
+  bool get isFilteringByVehicle => _isFilteringByVehicle;
+
   /// Kiểm tra xem có bộ lọc nào đang được áp dụng không
   bool get hasActiveFilters =>
-      _connectorType != null || _minPowerKw != null || _minRating != null;
+      _connectorType != null || _minPowerKw != null || _minRating != null || _isFilteringByVehicle;
   
   StationProvider(this._repository) {
     _initLocation();
@@ -185,6 +198,16 @@ class StationProvider with ChangeNotifier {
     return distanceInMeters / 1000.0;
   }
 
+  String? _mapToDbConnector(String? uiConnector) {
+    if (uiConnector == null) return null;
+    final clean = uiConnector.toLowerCase();
+    if (clean.contains('ccs2')) return 'CCS2';
+    if (clean.contains('type 2') || clean.contains('type2') || clean.contains('ac')) return 'AC';
+    if (clean.contains('chademo')) return 'CHAdeMO';
+    if (clean.contains('dc')) return 'DC';
+    return uiConnector;
+  }
+
   Future<void> fetchNearbyStations() async {
     final double searchLat = _searchLatitude ?? _currentPosition?.latitude ?? _defaultLatitude;
     final double searchLng = _searchLongitude ?? _currentPosition?.longitude ?? _defaultLongitude;
@@ -209,15 +232,25 @@ class StationProvider with ChangeNotifier {
 
     try {
       debugPrint('🔍 Tìm trạm sạc: lat=$searchLat, lng=$searchLng, radius=$_radius km');
+      
+      final rawConnector = _isFilteringByVehicle ? (_connectorType ?? _userConnectorType) : _connectorType;
+      final dbConnectorType = _mapToDbConnector(rawConnector);
+
       final data = await _repository.searchStations(
         latitude: searchLat,
         longitude: searchLng,
         radius: _radius,
-        connectorType: _connectorType,
+        connectorType: dbConnectorType,
         minPowerKw: _minPowerKw,
         minRating: _minRating,
       );
       _stations = data;
+      if (_maxPowerKw != null) {
+        _stations = data.where((station) {
+          // Trạm sạc phù hợp nếu có ít nhất 1 cổng sạc có công suất <= maxPowerKw
+          return station.connectorTypes.any((c) => c.powerKw <= _maxPowerKw!);
+        }).toList();
+      }
       _lastFetchedLatitude = searchLat;
       _lastFetchedLongitude = searchLng;
       debugPrint('✅ Tìm thấy ${data.length} trạm sạc');
@@ -234,10 +267,12 @@ class StationProvider with ChangeNotifier {
   Future<void> applyFilters({
     String? connectorType,
     int? minPowerKw,
+    int? maxPowerKw,
     double? minRating,
   }) async {
     _connectorType = connectorType;
     _minPowerKw = minPowerKw;
+    _maxPowerKw = maxPowerKw;
     _minRating = minRating;
     _lastFetchedLatitude = null;
     _lastFetchedLongitude = null;
@@ -248,10 +283,43 @@ class StationProvider with ChangeNotifier {
   Future<void> clearFilters() async {
     _connectorType = null;
     _minPowerKw = null;
+    _maxPowerKw = null;
     _minRating = null;
+    _isFilteringByVehicle = false;
     _lastFetchedLatitude = null;
     _lastFetchedLongitude = null;
     await fetchNearbyStations();
+  }
+
+  /// Thiết lập thông tin xe người dùng và tự động bật lọc theo xe
+  void setUserVehicle(String? vehicleModel, String? connectorType) {
+    _userVehicleModel = vehicleModel;
+    _userConnectorType = connectorType;
+    if (connectorType != null && connectorType.isNotEmpty) {
+      _isFilteringByVehicle = true;
+      _lastFetchedLatitude = null;
+      _lastFetchedLongitude = null;
+      fetchNearbyStations();
+    }
+    notifyListeners();
+  }
+
+  /// Tắt bộ lọc theo xe nhưng giữ lại thông tin xe
+  Future<void> clearVehicleFilter() async {
+    _isFilteringByVehicle = false;
+    _lastFetchedLatitude = null;
+    _lastFetchedLongitude = null;
+    await fetchNearbyStations();
+  }
+
+  /// Bật lại bộ lọc theo xe
+  Future<void> enableVehicleFilter() async {
+    if (_userConnectorType != null) {
+      _isFilteringByVehicle = true;
+      _lastFetchedLatitude = null;
+      _lastFetchedLongitude = null;
+      await fetchNearbyStations();
+    }
   }
 
   Future<void> fetchStationDetail(int stationId) async {

@@ -8,6 +8,7 @@ import 'package:trackasia_gl/trackasia_gl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/station_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import 'helpers/map_marker_generator.dart';
 import 'widgets/station_filter_bottom_sheet.dart';
@@ -62,7 +63,15 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StationProvider>().moveToCurrentLocation();
+      final stationProvider = context.read<StationProvider>();
+      stationProvider.moveToCurrentLocation();
+
+      // Đọc thông tin xe người dùng và tự động bật lọc trạm tương thích
+      final authProvider = context.read<AuthProvider>();
+      final user = authProvider.currentUser;
+      if (user != null && user.vehicleModel != null) {
+        stationProvider.setUserVehicle(user.vehicleModel, user.connectorType);
+      }
     });
   }
 
@@ -235,20 +244,24 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving';
     final String appleUrl =
         'https://maps.apple.com/?daddr=$lat,$lng&dirflg=d';
+    final String geoUrl = 'geo:$lat,$lng?q=$lat,$lng(Trạm sạc)';
 
     try {
       if (Platform.isIOS) {
         if (await canLaunchUrl(Uri.parse(appleUrl))) {
           await launchUrl(Uri.parse(appleUrl), mode: LaunchMode.externalApplication);
-        } else if (await canLaunchUrl(Uri.parse(googleUrl))) {
-          await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication);
+          return;
         }
+      }
+
+      // Trên Android hoặc fallback cho iOS: Thử geo intent trước, sau đó là Google Maps URL, cuối cùng là gọi trực tiếp không qua check
+      if (await canLaunchUrl(Uri.parse(geoUrl))) {
+        await launchUrl(Uri.parse(geoUrl), mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(Uri.parse(googleUrl))) {
+        await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication);
       } else {
-        if (await canLaunchUrl(Uri.parse(googleUrl))) {
-          await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication);
-        } else {
-          throw 'Could not launch Google Maps';
-        }
+        // Fallback trực tiếp nếu canLaunchUrl trả về false nhưng thiết bị vẫn có app xử lý
+        await launchUrl(Uri.parse(googleUrl), mode: LaunchMode.externalApplication);
       }
     } catch (e) {
       debugPrint('❌ Lỗi mở bản đồ: $e');
@@ -585,6 +598,55 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
                 ),
 
+              // ─── Vehicle Filter Banner ────────────────
+              if (provider.isFilteringByVehicle && provider.userVehicleModel != null)
+                Positioned(
+                  left: 20,
+                  right: 20,
+                  bottom: provider.selectedStationDetail != null ? 230 : 160,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.black.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.directions_car_rounded, size: 18, color: Color(0xFF43A047)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Đang lọc cho ${provider.userVehicleModel} (${provider.userConnectorType})',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.charcoal,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => provider.clearVehicleFilter(),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: AppColors.smoke,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded, size: 16, color: AppColors.gray),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               // ─── Bottom UI Overlay ─────────────────────
               Positioned(
                 left: 0,
@@ -601,6 +663,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     : provider.selectedStationDetail != null
                         ? StationPreviewCard(
                             detail: provider.selectedStationDetail!,
+                            userConnectorType: provider.userConnectorType,
+                            userVehicleModel: provider.userVehicleModel,
                             onDirections: () {
                               final pos = provider.currentPosition;
                               final station = provider.selectedStationDetail!;
@@ -620,6 +684,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                           )
                         : StationHorizontalList(
                             stations: provider.stations,
+                            userConnectorType: provider.userConnectorType,
+                            userVehicleModel: provider.userVehicleModel,
                             onStationTap: (station) {
                               provider.fetchStationDetail(station.stationId);
                               _mapController?.animateCamera(

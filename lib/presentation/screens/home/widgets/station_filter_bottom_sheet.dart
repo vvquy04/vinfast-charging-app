@@ -12,18 +12,35 @@ class StationFilterBottomSheet extends StatefulWidget {
 
 class _StationFilterBottomSheetState extends State<StationFilterBottomSheet> {
   String? _selectedConnector;
-  int? _selectedPower;
+  double _minPowerIndex = 0;
+  double _maxPowerIndex = 5;
   double? _selectedRating;
 
-  final List<String> _connectorOptions = const ['AC', 'DC', 'CCS2', 'CHAdeMO', 'Type2'];
-  final List<int> _powerOptions = const [0, 7, 22, 50, 100, 150, 250, 350];
+  final List<String> _connectorOptions = const ['CCS2 (DC)', 'Type 2 (AC)', 'CHAdeMO'];
+  final List<int> _powerValues = const [2, 7, 22, 50, 100, 9999];
+  final List<String> _powerLabels = const ['2', '7', '22', '50', '100', '150+'];
+
+  int _findClosestIndex(int kw) {
+    if (kw >= 150) return 5;
+    if (kw >= 100) return 4;
+    if (kw >= 50) return 3;
+    if (kw >= 22) return 2;
+    if (kw >= 7) return 1;
+    return 0;
+  }
+
+  String _getPowerLabel(int index) {
+    if (index == 5) return '150+ kW';
+    return '${_powerValues[index]} kW';
+  }
 
   @override
   void initState() {
     super.initState();
     final provider = context.read<StationProvider>();
     _selectedConnector = provider.connectorType;
-    _selectedPower = provider.minPowerKw;
+    _minPowerIndex = _findClosestIndex(provider.minPowerKw ?? 2).toDouble();
+    _maxPowerIndex = _findClosestIndex(provider.maxPowerKw ?? 9999).toDouble();
     _selectedRating = provider.minRating;
   }
 
@@ -70,7 +87,8 @@ class _StationFilterBottomSheetState extends State<StationFilterBottomSheet> {
                 onTap: () {
                   setState(() {
                     _selectedConnector = null;
-                    _selectedPower = null;
+                    _minPowerIndex = 0;
+                    _maxPowerIndex = 5;
                     _selectedRating = null;
                   });
                 },
@@ -131,47 +149,72 @@ class _StationFilterBottomSheetState extends State<StationFilterBottomSheet> {
           ),
           const SizedBox(height: 24),
 
-          // ─── Min Power ─────────────────────────
-          Text(
-            'Công suất tối thiểu: ${_selectedPower ?? 0} kW',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.black,
+          // ─── Min & Max Power Range ─────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Công suất sạc (kW)',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.black,
+                ),
+              ),
+              Text(
+                '${_getPowerLabel(_minPowerIndex.toInt())} - ${_getPowerLabel(_maxPowerIndex.toInt())}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: AppColors.smoke,
+              trackHeight: 6.0,
+              thumbColor: AppColors.white,
+              valueIndicatorColor: AppColors.primary,
+              activeTickMarkColor: Colors.transparent,
+              inactiveTickMarkColor: Colors.transparent,
+              rangeThumbShape: const RoundRangeSliderThumbShape(
+                enabledThumbRadius: 10.0,
+                elevation: 3.0,
+              ),
+            ),
+            child: RangeSlider(
+              values: RangeValues(_minPowerIndex, _maxPowerIndex),
+              min: 0,
+              max: 5,
+              divisions: 5,
+              onChanged: (RangeValues values) {
+                setState(() {
+                  _minPowerIndex = values.start;
+                  _maxPowerIndex = values.end;
+                });
+              },
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _powerOptions.map((kw) {
-              final isSelected = (_selectedPower ?? 0) == kw;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedPower = kw == 0 ? null : kw;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+          // Discrete Labels Row aligned with ticks
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: _powerLabels.map((label) {
+                return Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray,
                   ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : AppColors.smoke,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    kw == 0 ? 'Tất cả' : '≥ $kw kW',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? AppColors.white : AppColors.black,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -214,9 +257,13 @@ class _StationFilterBottomSheetState extends State<StationFilterBottomSheet> {
             height: 52,
             child: ElevatedButton(
               onPressed: () {
+                final int minKw = _powerValues[_minPowerIndex.toInt()];
+                final int maxKw = _powerValues[_maxPowerIndex.toInt()];
+
                 provider.applyFilters(
                   connectorType: _selectedConnector,
-                  minPowerKw: _selectedPower,
+                  minPowerKw: minKw == 2 ? null : minKw,
+                  maxPowerKw: maxKw == 9999 ? null : maxKw,
                   minRating: _selectedRating,
                 );
                 Navigator.pop(context);

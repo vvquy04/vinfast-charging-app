@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -52,10 +52,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     super.dispose();
   }
 
-  bool get _isFormValid =>
-      _nameController.text.trim().isNotEmpty &&
-      _passwordController.text.length >= 6 &&
-      _confirmPasswordController.text == _passwordController.text;
 
   void _pickGender() {
     showModalBottomSheet(
@@ -128,6 +124,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       initialDate: _selectedDate ?? DateTime(2000, 1, 1),
       firstDate: DateTime(1950),
       lastDate: now,
+      locale: const Locale('vi', 'VN'),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -149,34 +146,26 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Future<void> _pickAvatar() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        withData: true,
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
       );
 
-      if (result == null || result.files.isEmpty) {
+      if (image == null) {
         return;
       }
 
-      final file = result.files.single;
-      final bytes = file.bytes;
-      if (bytes == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể đọc ảnh đã chọn')),
-        );
-        return;
-      }
-
-      final extension = file.extension?.toLowerCase();
-      final fileName = file.name.isNotEmpty
-          ? file.name
-          : 'avatar${extension != null && extension.isNotEmpty ? '.${extension}' : '.jpg'}';
+      final bytes = await image.readAsBytes();
+      final fileName = image.name;
 
       setState(() {
         _avatarBytes = bytes;
       });
 
+      if (!mounted) return;
       final profileProvider = context.read<ProfileProvider>();
       final uploadedUrl = await profileProvider.uploadAvatarBytes(
         bytes: bytes,
@@ -187,11 +176,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       setState(() {
         _avatarUrl = uploadedUrl;
       });
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chọn hoặc tải ảnh lên thất bại')),
-      );
+    } catch (e) {
+      debugPrint('Lỗi chọn ảnh đại diện: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chọn hoặc tải ảnh lên thất bại')),
+        );
+      }
     }
   }
 
@@ -227,8 +218,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       confirm,
       password,
     );
-    if (confirmPassError != null)
+    if (confirmPassError != null) {
       setState(() => _confirmError = confirmPassError);
+    }
 
     if (_nameError != null ||
         _emailError != null ||
@@ -236,6 +228,20 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         _confirmError != null) {
       return;
     }
+
+    // ─── Kiểm tra Email tồn tại ──────────────────
+    if (email.isNotEmpty) {
+      final authProvider = context.read<AuthProvider>();
+      final exists = await authProvider.checkEmailExists(email);
+      if (exists) {
+        setState(() {
+          _emailError = 'Email này đã được sử dụng bởi tài khoản khác';
+        });
+        return;
+      }
+    }
+
+    if (!mounted) return;
 
     final phone = ModalRoute.of(context)?.settings.arguments as String?;
     if (phone == null) {
@@ -252,13 +258,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       'password': password,
       'fullName': name,
       'email': email.isNotEmpty ? email : null,
-      'gender': _selectedGender == 'Nam'
-          ? 'MALE'
-          : _selectedGender == 'Nữ'
-          ? 'FEMALE'
-          : _selectedGender == 'Khác'
-          ? 'OTHER'
-          : null,
+      'gender': _selectedGender,
       'dateOfBirth': _selectedDate != null
           ? "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}"
           : null,
@@ -352,8 +352,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                     )
                                   : const Icon(
                                       Icons.person_rounded,
-                                      size: 48,
-                                      color: AppColors.lightGray,
+                                      size: 50,
+                                      color: AppColors.gray,
                                     ),
                             ),
                           ),
@@ -562,7 +562,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     AppButton(
                       text: 'Tiếp tục',
                       isLoading: isLoading,
-                      onPressed: _isFormValid && !isLoading ? _continue : null,
+                      onPressed: !isLoading ? _continue : null,
                     ),
 
                     const SizedBox(height: AppSizes.xl),

@@ -5,12 +5,23 @@ import '../../../../core/constants/app_colors.dart';
 class StationHorizontalList extends StatelessWidget {
   final List<StationSummaryModel> stations;
   final Function(StationSummaryModel) onStationTap;
+  final String? userConnectorType;
+  final String? userVehicleModel;
 
   const StationHorizontalList({
     super.key,
     required this.stations,
     required this.onStationTap,
+    this.userConnectorType,
+    this.userVehicleModel,
   });
+
+  bool _isStationCompatible(StationSummaryModel station) {
+    if (userConnectorType == null) return true;
+    return station.connectorTypes.any(
+      (c) => c.type.toLowerCase() == userConnectorType!.toLowerCase(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +40,7 @@ class StationHorizontalList extends StatelessWidget {
             0,
             (sum, c) => sum + c.totalPorts,
           );
+          final isCompatible = _isStationCompatible(station);
           return GestureDetector(
             onTap: () => onStationTap(station),
             child: Container(
@@ -97,13 +109,29 @@ class StationHorizontalList extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '$totalPorts cổng sạc',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              '$totalPorts cổng sạc',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (userConnectorType != null) ...[
+                              const SizedBox(width: 6),
+                              Icon(
+                                isCompatible
+                                    ? Icons.check_circle_rounded
+                                    : Icons.warning_rounded,
+                                size: 14,
+                                color: isCompatible
+                                    ? const Color(0xFF43A047)
+                                    : const Color(0xFFF57C00),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),

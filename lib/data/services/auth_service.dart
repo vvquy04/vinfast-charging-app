@@ -97,4 +97,25 @@ class AuthService {
       }
     }
   }
+
+  /// GET /api/auth/check-email
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      final response = await _dioClient.dio.get(
+        '/api/auth/check-email',
+        queryParameters: {'email': email},
+      );
+      final data = response.data;
+      if (data != null && data['data'] != null) {
+        return data['data']['exists'] == true;
+      }
+      return false;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['message'] ?? 'Failed to check email');
+      } else {
+        throw Exception('Network error or server unreachable');
+      }
+    }
+  }
 }

@@ -116,4 +116,18 @@ class AuthProvider with ChangeNotifier {
     _currentUser = null;
     notifyListeners();
   }
+
+  Future<bool> checkEmailExists(String email) async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final exists = await _repository.checkEmailExists(email);
+      _setLoading(false);
+      return exists;
+    } catch (e) {
+      _setLoading(false);
+      _setError(e.toString().replaceAll('Exception: ', ''));
+      return false;
+    }
+  }
 }

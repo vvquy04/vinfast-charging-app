@@ -32,11 +32,18 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   ];
 
   static const List<String> _connectors = [
-    'CCS2',
-    'AC (Type 2)',
+    'CCS2 (DC)',
+    'Type 2 (AC)',
     'CHAdeMO',
-    'DC',
   ];
+
+
+  void _onVehicleSelected(String vehicle) {
+    setState(() {
+      _selectedVehicle = vehicle;
+      _selectedConnector = null; // Reset súng sạc để người dùng tùy chọn chọn hoặc không
+    });
+  }
 
   void _executeRegistration(Map<String, dynamic> data) async {
     final authProvider = context.read<AuthProvider>();
@@ -64,12 +71,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     }
   }
 
-  void _showMissingSelectionMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.error),
-    );
-  }
-
   void _addLater() {
     final data =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -78,8 +79,13 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   }
 
   void _addVehicle() {
-    if (_selectedVehicle == null || _selectedConnector == null) {
-      _showMissingSelectionMessage('Vui lòng chọn mẫu xe và loại súng sạc');
+    if (_selectedVehicle == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn mẫu xe'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
     final data =
@@ -125,28 +131,34 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.md),
-                ...options.map(
-                  (opt) => ListTile(
-                    title: Text(
-                      opt,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: current == opt
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: AppColors.black,
-                      ),
-                    ),
-                    trailing: current == opt
-                        ? const Icon(
-                            Icons.check_rounded,
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
+                    children: options.map(
+                      (opt) => ListTile(
+                        title: Text(
+                          opt,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: current == opt
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             color: AppColors.black,
-                          )
-                        : null,
-                    onTap: () {
-                      onSelect(opt);
-                      Navigator.pop(context);
-                    },
+                          ),
+                        ),
+                        trailing: current == opt
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: AppColors.black,
+                              )
+                            : null,
+                        onTap: () {
+                          onSelect(opt);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ).toList(),
                   ),
                 ),
               ],
@@ -201,57 +213,13 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
               // ─── Vehicle illustration ───────────
               Center(
-                child: SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 200,
-                        height: 200,
-                        decoration: const BoxDecoration(
-                          color: AppColors.smoke,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          color: AppColors.silver.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const Icon(
-                        Icons.directions_car_rounded,
-                        size: 80,
-                        color: AppColors.black,
-                      ),
-                      Positioned(
-                        top: 25,
-                        right: 20,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.ev_station_rounded,
-                            size: 18,
-                            color: AppColors.charcoal,
-                          ),
-                        ),
-                      ),
-                    ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    'assets/images/walkthrough_charge.jpg',
+                    width: 240,
+                    height: 160,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
@@ -275,32 +243,35 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                   'Chọn Mẫu Xe',
                   _vehicles,
                   _selectedVehicle,
-                  (v) => setState(() => _selectedVehicle = v),
+                  _onVehicleSelected,
                 ),
               ),
 
               const SizedBox(height: AppSizes.lg),
 
               // ─── Connector Type ─────────────────
-              const Text(
-                'Loại Súng Sạc',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.charcoal,
+              // Hiển thị dropdown súng sạc như một tùy chọn nâng cao (không bắt buộc) sau khi chọn mẫu xe
+              if (_selectedVehicle != null) ...[
+                const Text(
+                  'Loại Súng Sạc',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoal,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSizes.sm),
-              _DropdownTile(
-                value: _selectedConnector,
-                placeholder: 'Chọn loại súng sạc',
-                onTap: () => _showPicker(
-                  'Chọn Loại Súng Sạc',
-                  _connectors,
-                  _selectedConnector,
-                  (v) => setState(() => _selectedConnector = v),
+                const SizedBox(height: AppSizes.sm),
+                _DropdownTile(
+                  value: _selectedConnector,
+                  placeholder: 'Chọn loại súng sạc (không bắt buộc)',
+                  onTap: () => _showPicker(
+                    'Chọn Loại Súng Sạc',
+                    _connectors,
+                    _selectedConnector,
+                    (v) => setState(() => _selectedConnector = v),
+                  ),
                 ),
-              ),
+              ],
 
               const SizedBox(height: AppSizes.xl),
 
@@ -320,12 +291,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     child: AppButton(
                       text: 'Thêm Xe',
                       isLoading: isLoading,
-                      onPressed:
-                          (_selectedVehicle != null &&
-                              _selectedConnector != null &&
-                              !isLoading)
-                          ? _addVehicle
-                          : null,
+                      onPressed: !isLoading ? _addVehicle : null,
                     ),
                   ),
                 ],
