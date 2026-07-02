@@ -14,6 +14,7 @@ class StationRepository {
     double radius = 10,
     String? connectorType,
     int? minPowerKw,
+    int? maxPowerKw,
     double? minRating,
   }) async {
     try {
@@ -23,6 +24,7 @@ class StationRepository {
         radius: radius,
         connectorType: connectorType,
         minPowerKw: minPowerKw,
+        maxPowerKw: maxPowerKw,
         minRating: minRating,
       );
 

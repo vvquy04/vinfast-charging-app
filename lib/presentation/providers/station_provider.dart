@@ -242,15 +242,10 @@ class StationProvider with ChangeNotifier {
         radius: _radius,
         connectorType: dbConnectorType,
         minPowerKw: _minPowerKw,
+        maxPowerKw: _maxPowerKw,
         minRating: _minRating,
       );
       _stations = data;
-      if (_maxPowerKw != null) {
-        _stations = data.where((station) {
-          // Trạm sạc phù hợp nếu có ít nhất 1 cổng sạc có công suất <= maxPowerKw
-          return station.connectorTypes.any((c) => c.powerKw <= _maxPowerKw!);
-        }).toList();
-      }
       _lastFetchedLatitude = searchLat;
       _lastFetchedLongitude = searchLng;
       debugPrint('Found ${data.length} charging stations');

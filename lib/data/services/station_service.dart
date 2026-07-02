@@ -13,6 +13,7 @@ class StationService {
     double radius = 10,
     String? connectorType,
     int? minPowerKw,
+    int? maxPowerKw,
     double? minRating,
   }) async {
     final Map<String, dynamic> queryParams = {
@@ -26,6 +27,9 @@ class StationService {
     }
     if (minPowerKw != null) {
       queryParams['minPowerKw'] = minPowerKw;
+    }
+    if (maxPowerKw != null) {
+      queryParams['maxPowerKw'] = maxPowerKw;
     }
     if (minRating != null) {
       queryParams['minRating'] = minRating;
