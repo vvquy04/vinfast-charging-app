@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 
-/// Variants for [AppButton].
 enum AppButtonStyle { filled, outlined, text }
 
-/// Reusable button following the minimalist design system.
-///
-/// Supports three visual styles: [filled], [outlined], and [text].
 class AppButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -31,7 +27,6 @@ class AppButton extends StatelessWidget {
     final bool isDisabled = onPressed == null && !isLoading;
 
     switch (style) {
-      // ─── Filled (primary) ────────────────────────
       case AppButtonStyle.filled:
         return SizedBox(
           width: width ?? double.infinity,
@@ -76,7 +71,6 @@ class AppButton extends StatelessWidget {
           ),
         );
 
-      // ─── Outlined (secondary) ────────────────────
       case AppButtonStyle.outlined:
         return SizedBox(
           width: width ?? double.infinity,
@@ -121,7 +115,6 @@ class AppButton extends StatelessWidget {
           ),
         );
 
-      // ─── Text (tertiary) ─────────────────────────
       case AppButtonStyle.text:
         return TextButton(
           onPressed: isLoading ? null : onPressed,
