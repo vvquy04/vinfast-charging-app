@@ -28,11 +28,11 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   TrackAsiaMapController? _mapController;
   bool _isMapReady = false;
 
-  // TrackAsia style URL (free demo key)
+  // Đường dẫn cấu hình giao diện bản đồ TrackAsia (sử dụng key dùng thử công khai)
   static const String _styleUrl =
       'https://maps.track-asia.com/styles/v2/streets.json?key=public_key';
 
-  // Hanoi center (Hoan Kiem Lake)
+  // Tọa độ trung tâm Hà Nội (Hồ Hoàn Kiếm) làm vị trí khởi tạo ban đầu
   static const CameraPosition _initialCamera = CameraPosition(
     target: LatLng(21.0285, 105.8542),
     zoom: 14.5,
@@ -288,11 +288,11 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
     setState(() => _isMapReady = true);
 
-    // Add markers after style is loaded
+    // Vẽ các marker lên bản đồ
     final provider = context.read<StationProvider>();
     await _updateMarkers(provider);
 
-    // Listen to provider changes
+    // Lắng nghe thay đổi dữ liệu từ Provider khi có dữ liệu mới
     provider.addListener(_onProviderChanged);
   }
 
@@ -326,7 +326,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   Future<void> _updateMarkers(StationProvider provider) async {
     if (_mapController == null || !_isMapReady) return;
 
-    // --- Update user marker ---
+    // --- Cập nhật marker vị trí của người dùng ---
     if (provider.currentPosition != null) {
       final userLatLng = LatLng(
         provider.currentPosition!.latitude,
@@ -350,8 +350,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       }
     }
 
-    // --- Update station markers ---
-    // Remove old station symbols that are no longer in the list
+    // --- Cập nhật các marker trạm sạc ---
+    // Xóa các biểu tượng trạm sạc cũ không còn nằm trong danh sách tìm kiếm mới
     final currentStationIds = provider.stations.map((s) => s.stationId).toSet();
     final toRemove = _stationSymbols.keys
         .where((id) => !currentStationIds.contains(id))
@@ -361,7 +361,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       _stationSymbols.remove(id);
     }
 
-    // Add or update station symbols
+    // Thêm mới hoặc cập nhật các biểu tượng trạm sạc
     for (final station in provider.stations) {
       final stationLatLng = LatLng(station.latitude, station.longitude);
       final isAvailable = station.connectorTypes.any((c) => c.totalPorts > 0);
@@ -394,13 +394,13 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   void _onSymbolTapped(Symbol symbol) {
     final provider = context.read<StationProvider>();
-    // Find station id from symbol
+    // Tìm mã trạm sạc tương ứng từ biểu tượng vừa nhấn
     for (final entry in _stationSymbols.entries) {
       if (entry.value.id == symbol.id) {
         final stationId = entry.key;
         provider.fetchStationDetail(stationId);
 
-        // Find the station in the list to animate/zoom camera to its coordinates
+        // Tìm trạm sạc trong danh sách để di chuyển camera bản đồ tới tọa độ đó
         try {
           final station = provider.stations.firstWhere(
             (s) => s.stationId == stationId,
@@ -408,7 +408,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           _mapController?.animateCamera(
             CameraUpdate.newLatLngZoom(
               LatLng(station.latitude, station.longitude),
-              15.5, // Zoom in closer to the selected station
+              15.5, // Phóng to bản đồ gần hơn vào trạm sạc được chọn
             ),
           );
         } catch (e) {
@@ -456,7 +456,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 child: _buildSearchBar(),
               ),
 
-              // ─── Search Suggestions Overlay ────────────
+              // ─── Lớp gợi ý tìm kiếm ────────────
               if (_showSuggestions)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 20 + 56 + 8,
@@ -474,10 +474,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       });
                       FocusScope.of(context).unfocus();
 
-                      // Select the station in provider
+                      // Chọn và tải chi tiết trạm sạc được gợi ý
                       provider.fetchStationDetail(station.stationId);
 
-                      // Animate camera to selected station
+                      // Di chuyển camera bản đồ đến trạm sạc được chọn
                       _mapController?.animateCamera(
                         CameraUpdate.newLatLngZoom(
                           LatLng(station.latitude, station.longitude),
@@ -488,7 +488,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
                 ),
 
-              // ─── Floating Action Buttons right ─────────
+              // ─── Các nút chức năng nổi bên phải ─────────
               Positioned(
                 right: 20,
                 bottom: 180,
@@ -562,7 +562,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 ),
               ),
 
-              // ─── Loading Route Indicator ────────────────
+              // ─── Chỉ báo đang tải tuyến đường chỉ dẫn ────────────────
               if (_isLoadingRoute)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 80,
@@ -599,7 +599,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
                 ),
 
-              // ─── Vehicle Filter Banner ────────────────
+              // ─── Banner thông báo đang lọc theo dòng xe ────────────────
               if (provider.isFilteringByVehicle && provider.userVehicleModel != null)
                 Positioned(
                   left: 20,
@@ -648,7 +648,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
                 ),
 
-              // ─── Bottom UI Overlay ─────────────────────
+              // ─── Giao diện đè phần chân màn hình ─────────────────────
               Positioned(
                 left: 0,
                 right: 0,
