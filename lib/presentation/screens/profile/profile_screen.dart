@@ -108,6 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildInfoRow('Email', profile.email ?? 'Chưa cập nhật'),
                       _buildInfoRow('Giới tính', profile.gender ?? 'Chưa cập nhật'),
                       _buildInfoRow('Ngày sinh', profile.dateOfBirth ?? 'Chưa cập nhật'),
+                      _buildInfoRow('Điểm tích lũy 🎖️', '${profile.rewardPoints} điểm'),
                       
                       const Divider(height: 32, color: AppColors.smoke),
                       

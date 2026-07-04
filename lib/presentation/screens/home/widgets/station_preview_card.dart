@@ -122,6 +122,11 @@ class StationPreviewCard extends StatelessWidget {
 
                     // Rating + Reviews
                     _buildRating(),
+
+                    const SizedBox(height: 6),
+
+                    // Trạng thái check-in & TOPSIS match score
+                    _buildBadges(context, provider),
                   ],
                 ),
               ),
@@ -376,6 +381,107 @@ class StationPreviewCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBadges(BuildContext context, StationProvider provider) {
+    // Tìm summary tương ứng để lấy matchScore
+    int? matchScore;
+    try {
+      final summary = provider.stations.firstWhere(
+        (s) => s.stationId == detail.stationId,
+      );
+      matchScore = summary.matchScore;
+    } catch (_) {}
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: [
+        _buildCrowdStatusBadge(detail.crowdStatus),
+        if (provider.useTopsis && matchScore != null)
+          _buildMatchScoreBadge(matchScore),
+      ],
+    );
+  }
+
+  Widget _buildCrowdStatusBadge(String? status) {
+    String text = 'Chưa có check-in';
+    Color color = AppColors.gray;
+    Color bgColor = AppColors.smoke;
+
+    if (status != null) {
+      switch (status) {
+        case 'EMPTY':
+          text = '🟢 Trống chỗ';
+          color = const Color(0xFF2E7D32);
+          bgColor = const Color(0xFFE8F5E9);
+          break;
+        case 'MODERATE':
+          text = '🟡 Vừa phải';
+          color = const Color(0xFFF57C00);
+          bgColor = const Color(0xFFFFF3E0);
+          break;
+        case 'BUSY':
+          text = '🔴 Đang bận';
+          color = const Color(0xFFD32F2F);
+          bgColor = const Color(0xFFFFEBEE);
+          break;
+        case 'MAINTENANCE':
+          text = '❌ Bảo trì';
+          color = const Color(0xFFC2185B);
+          bgColor = const Color(0xFFFCE4EC);
+          break;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMatchScoreBadge(int score) {
+    Color color;
+    Color bgColor;
+    if (score >= 90) {
+      color = const Color(0xFF2E7D32);
+      bgColor = const Color(0xFFE8F5E9);
+    } else if (score >= 70) {
+      color = const Color(0xFFF57C00);
+      bgColor = const Color(0xFFFFF3E0);
+    } else {
+      color = const Color(0xFFD32F2F);
+      bgColor = const Color(0xFFFFEBEE);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+      ),
+      child: Text(
+        '$score% Phù hợp',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
     );
   }
 }

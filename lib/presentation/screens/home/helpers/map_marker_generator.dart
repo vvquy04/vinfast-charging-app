@@ -67,10 +67,17 @@ class MapMarkerGenerator {
     return byteData!.buffer.asUint8List();
   }
 
-  /// Tạo hình ảnh marker cho trạm sạc
+  /// Tạo hình ảnh marker cho trạm sạc với viền màu theo trạng thái.
+  ///
+  /// [borderColor] quyết định màu viền ngoài cùng:
+  /// - Xanh lá (Trống) → Color(0xFF4CAF50)
+  /// - Vàng (Vừa phải) → Color(0xFFFFC107)
+  /// - Đỏ (Kẹt/Đầy/Bảo trì) → Color(0xFFF44336)
+  /// - Trắng (mặc định) → Colors.white
   static Future<Uint8List> createStationMarkerImage({
     required bool isAvailable,
     required ui.Image? logoImage,
+    Color borderColor = Colors.white,
   }) async {
     const double width = 160;
     const double height = 180;
@@ -109,15 +116,15 @@ class MapMarkerGenerator {
       ..style = PaintingStyle.fill;
     canvas.drawPath(unifiedPath, bgPaint);
 
-    // 4. Vẽ viền màu trắng ngoài cùng
+    // 4. Vẽ viền màu (thay đổi theo trạng thái check-in)
     final borderPaint = Paint()
-      ..color = Colors.white
+      ..color = borderColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(unifiedPath, borderPaint);
 
-    // 5. Vẽ logo trạm sạc đã tải trước đó vào giữa ghim dưới dạng hình tròn
+    // 5. Vẽ logo trạm sạc vào giữa ghim dưới dạng hình tròn
     if (logoImage != null) {
       canvas.save();
 
@@ -156,5 +163,20 @@ class MapMarkerGenerator {
     final image = await picture.toImage(width.toInt(), height.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     return byteData!.buffer.asUint8List();
+  }
+
+  /// Lấy màu viền marker tương ứng với trạng thái check-in.
+  static Color getStatusBorderColor(String? crowdStatus) {
+    switch (crowdStatus) {
+      case 'EMPTY':
+        return const Color(0xFF4CAF50); // Xanh lá
+      case 'MODERATE':
+        return const Color(0xFFFFC107); // Vàng
+      case 'BUSY':
+      case 'MAINTENANCE':
+        return const Color(0xFFF44336); // Đỏ
+      default:
+        return const Color(0xFF4CAF50); // Mặc định: Xanh lá
+    }
   }
 }

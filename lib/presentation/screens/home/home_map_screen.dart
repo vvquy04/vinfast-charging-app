@@ -310,12 +310,24 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     final userIcon = await MapMarkerGenerator.createUserMarkerImage();
     await _mapController!.addImage('user-marker', userIcon);
 
-    final availableIcon = await MapMarkerGenerator.createStationMarkerImage(
-      isAvailable: true,
-      logoImage: _logoImage,
-    );
-    await _mapController!.addImage('station-available', availableIcon);
+    // Đăng ký marker cho từng trạng thái check-in (viền màu khác nhau)
+    final statusMap = {
+      'EMPTY': const Color(0xFF4CAF50),     // Xanh lá
+      'MODERATE': const Color(0xFFFFC107),  // Vàng
+      'BUSY': const Color(0xFFF44336),      // Đỏ
+      'MAINTENANCE': const Color(0xFF9E9E9E), // Xám
+    };
 
+    for (final entry in statusMap.entries) {
+      final icon = await MapMarkerGenerator.createStationMarkerImage(
+        isAvailable: true,
+        logoImage: _logoImage,
+        borderColor: entry.value,
+      );
+      await _mapController!.addImage('station-${entry.key}', icon);
+    }
+
+    // Marker mặc định cho trạm không hoạt động
     final unavailableIcon = await MapMarkerGenerator.createStationMarkerImage(
       isAvailable: false,
       logoImage: _logoImage,
@@ -365,9 +377,15 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     for (final station in provider.stations) {
       final stationLatLng = LatLng(station.latitude, station.longitude);
       final isAvailable = station.connectorTypes.any((c) => c.totalPorts > 0);
-      final iconName = isAvailable
-          ? 'station-available'
-          : 'station-unavailable';
+
+      // Chọn icon marker theo trạng thái check-in
+      String iconName;
+      if (!isAvailable) {
+        iconName = 'station-unavailable';
+      } else {
+        final status = station.crowdStatus ?? 'EMPTY';
+        iconName = 'station-$status';
+      }
 
       if (_stationSymbols.containsKey(station.stationId)) {
         await _mapController!.updateSymbol(
@@ -453,7 +471,13 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 top: MediaQuery.of(context).padding.top + 20,
                 left: 20,
                 right: 20,
-                child: _buildSearchBar(),
+                child: Column(
+                  children: [
+                    _buildSearchBar(),
+                    const SizedBox(height: 10),
+                    _buildTopsisFilters(provider),
+                  ],
+                ),
               ),
 
               // ─── Lớp gợi ý tìm kiếm ────────────
@@ -790,6 +814,70 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTopsisFilters(StationProvider provider) {
+    final filters = [
+      {'key': 'power', 'label': '⚡ Sạc siêu nhanh'},
+      {'key': 'distance', 'label': '📍 Gần nhất'},
+      {'key': 'occupancy', 'label': '🍃 Trạm vắng vẻ'},
+      {'key': 'rating', 'label': '⭐ Đánh giá tốt'},
+    ];
+
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: filters.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final filter = filters[index];
+          final key = filter['key']!;
+          final label = filter['label']!;
+          final isActive = provider.activeTopsisFilters.contains(key);
+
+          return GestureDetector(
+            onTap: () => provider.toggleTopsisFilter(key),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.navy : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isActive ? AppColors.navy : AppColors.lightGray.withOpacity(0.5),
+                  width: 1,
+                ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: AppColors.navy.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        )
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                    color: isActive ? Colors.white : AppColors.charcoal,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -5,6 +5,8 @@ import '../../providers/station_provider.dart';
 import '../../providers/review_provider.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../../data/models/station_detail_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -20,9 +22,15 @@ class StationDetailScreen extends StatefulWidget {
 }
 
 class _StationDetailScreenState extends State<StationDetailScreen> {
+  String _selectedDay = 'Thứ 2';
+
   @override
   void initState() {
     super.initState();
+    final dayOfWeek = DateTime.now().weekday; // 1 = Monday, 7 = Sunday
+    final days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    _selectedDay = days[dayOfWeek - 1];
+
     // Tải danh sách đánh giá và ghi nhận lịch sử sau khi dựng giao diện xong
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final stationProvider = context.read<StationProvider>();
@@ -131,9 +139,20 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                     ],
                   ),
 
+                  const SizedBox(height: 16),
+
+                  // Check-in & Báo cáo trạng thái thực tế
+                  _buildCheckinWidget(context, provider, isAuthenticated, detail),
+
                   const SizedBox(height: AppSizes.xl),
                   const Text('Danh sách Trụ sạc', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                   ...detail.connectorTypes.map((connector) => ConnectorTypeCard(connector: connector)),
+
+                  // Biểu đồ Popular Times bận rộn lịch sử
+                  if (detail.popularTimes != null) ...[
+                    const SizedBox(height: AppSizes.xl),
+                    _buildPopularTimesChart(detail.popularTimes!),
+                  ],
 
                   const SizedBox(height: AppSizes.xl),
                   const Text('Đánh giá & Nhận xét', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
@@ -209,6 +228,328 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckinWidget(
+      BuildContext context, StationProvider provider, bool isAuthenticated, StationDetailModel detail) {
+    final status = detail.crowdStatus;
+    final hasReport = detail.statusUpdatedAt != null;
+
+    String statusText = 'Chưa có check-in';
+    Color color = AppColors.gray;
+    Color bgColor = AppColors.smoke;
+    IconData icon = Icons.info_outline_rounded;
+
+    if (status != null) {
+      switch (status) {
+        case 'EMPTY':
+          statusText = 'Trống chỗ';
+          color = const Color(0xFF2E7D32);
+          bgColor = const Color(0xFFE8F5E9);
+          icon = Icons.check_circle_outline_rounded;
+          break;
+        case 'MODERATE':
+          statusText = 'Vừa phải';
+          color = const Color(0xFFF57C00);
+          bgColor = const Color(0xFFFFF3E0);
+          icon = Icons.hourglass_empty_rounded;
+          break;
+        case 'BUSY':
+          statusText = 'Đang bận / Đầy';
+          color = const Color(0xFFD32F2F);
+          bgColor = const Color(0xFFFFEBEE);
+          icon = Icons.error_outline_rounded;
+          break;
+        case 'MAINTENANCE':
+          statusText = 'Bảo trì';
+          color = const Color(0xFFC2185B);
+          bgColor = const Color(0xFFFCE4EC);
+          icon = Icons.build_outlined;
+          break;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Trạng thái thực tế: $statusText',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasReport
+                          ? 'Cập nhật bởi ${detail.statusUpdatedByName} (${detail.statusUpdatedAt})'
+                          : 'Hãy là người đầu tiên check-in tại đây!',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: color.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: !isAuthenticated
+                  ? () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Vui lòng đăng nhập để báo cáo trạng thái!'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      )
+                  : () => _showCheckinDialog(context, provider, detail),
+              icon: const Icon(Icons.location_on_outlined, size: 18),
+              label: const Text(
+                'Check-in',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color == AppColors.gray ? AppColors.primary : color,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCheckinDialog(BuildContext context, StationProvider provider, StationDetailModel detail) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            'Check-in & Báo cáo',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Chọn tình trạng hiện tại bạn quan sát thấy tại trạm để báo cáo cho cộng đồng và nhận 10 điểm thưởng.',
+                style: TextStyle(fontSize: 13, color: AppColors.gray),
+              ),
+              const SizedBox(height: 16),
+              _buildCheckinOption(ctx, provider, detail, 'EMPTY', '🟢 Trống chỗ'),
+              const SizedBox(height: 8),
+              _buildCheckinOption(ctx, provider, detail, 'MODERATE', '🟡 Vừa phải'),
+              const SizedBox(height: 8),
+              _buildCheckinOption(ctx, provider, detail, 'BUSY', '🔴 Đang bận / Đầy'),
+              const SizedBox(height: 8),
+              _buildCheckinOption(ctx, provider, detail, 'MAINTENANCE', '❌ Đang bảo trì'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCheckinOption(
+      BuildContext dialogCtx, StationProvider provider, StationDetailModel detail, String status, String label) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          side: const BorderSide(color: AppColors.smoke, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onPressed: () async {
+          Navigator.pop(dialogCtx);
+          final success = await provider.checkinStation(detail.stationId, status);
+          if (mounted) {
+            // Cập nhật lại thông tin profile để cập nhật điểm tích lũy
+            try {
+              context.read<ProfileProvider>().fetchProfile();
+            } catch (_) {}
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(provider.checkinMessage ?? 'Đã gửi báo cáo!'),
+                backgroundColor: success ? const Color(0xFF43A047) : AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        child: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.charcoal, fontSize: 14),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPopularTimesChart(Map<String, List<int>> popularTimes) {
+    final busyList = popularTimes[_selectedDay] ?? List.filled(24, 0);
+    final currentHour = DateTime.now().hour;
+    final currentVal = busyList[currentHour];
+
+    String statusText = 'Hiện tại: Trạm bận trung bình';
+    if (currentVal > 75) {
+      statusText = '🔥 Hiện tại: Giờ cao điểm, thời gian chờ khoảng 15-20 phút';
+    } else if (currentVal < 35) {
+      statusText = '🍃 Hiện tại: Trạm đang vắng hơn bình thường';
+    }
+
+    final dayLabels = {
+      'Thứ 2': 'Thứ 2',
+      'Thứ 3': 'Thứ 3',
+      'Thứ 4': 'Thứ 4',
+      'Thứ 5': 'Thứ 5',
+      'Thứ 6': 'Thứ 6',
+      'Thứ 7': 'Thứ 7',
+      'Chủ nhật': 'Chủ nhật',
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.smoke,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Giờ cao điểm & Bận rộn',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.black),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Biểu đồ hiển thị xu hướng bận rộn trung bình của trạm',
+                      style: TextStyle(fontSize: 11, color: AppColors.gray),
+                    ),
+                  ],
+                ),
+              ),
+              DropdownButton<String>(
+                value: _selectedDay,
+                underline: const SizedBox(),
+                items: dayLabels.entries.map((e) {
+                  return DropdownMenuItem(
+                    value: e.key,
+                    child: Text(
+                      e.value,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedDay = val;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            statusText,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.charcoal,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 120,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(24, (hour) {
+                final val = busyList[hour];
+                final isCurrent = hour == currentHour;
+
+                // Chỉ hiển thị nhãn giờ cho 0h, 6h, 12h, 18h, 23h để tránh đè chữ
+                String hourLabel = '';
+                if (hour == 0 || hour == 6 || hour == 12 || hour == 18 || hour == 23) {
+                  hourLabel = '${hour.toString().padLeft(2, '0')}h';
+                }
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          isCurrent ? '$val%' : '',
+                          style: const TextStyle(
+                            fontSize: 7,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          height: val * 0.8, // Tỉ lệ chiều cao tối đa 80px
+                          decoration: BoxDecoration(
+                            color: isCurrent ? AppColors.primary : AppColors.gray.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          height: 12,
+                          child: Text(
+                            hourLabel,
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: isCurrent ? AppColors.primary : AppColors.gray,
+                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
         ],

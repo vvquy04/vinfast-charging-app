@@ -6,7 +6,7 @@ class StationService {
 
   StationService(this._dioClient);
 
-  /// GET /api/stations
+  /// GET /api/stations (hỗ trợ TOPSIS)
   Future<Response> searchStations({
     required double latitude,
     required double longitude,
@@ -15,6 +15,11 @@ class StationService {
     int? minPowerKw,
     int? maxPowerKw,
     double? minRating,
+    bool useTopsis = false,
+    double weightDistance = 1.0,
+    double weightPower = 1.0,
+    double weightOccupancy = 1.0,
+    double weightRating = 1.0,
   }) async {
     final Map<String, dynamic> queryParams = {
       'latitude': latitude,
@@ -35,11 +40,28 @@ class StationService {
       queryParams['minRating'] = minRating;
     }
 
+    // Tham số TOPSIS
+    if (useTopsis) {
+      queryParams['useTopsis'] = true;
+      queryParams['weightDistance'] = weightDistance;
+      queryParams['weightPower'] = weightPower;
+      queryParams['weightOccupancy'] = weightOccupancy;
+      queryParams['weightRating'] = weightRating;
+    }
+
     return await _dioClient.dio.get('/api/stations', queryParameters: queryParams);
   }
 
   /// GET /api/stations/{stationId}
   Future<Response> getStationDetail(int stationId) async {
     return await _dioClient.dio.get('/api/stations/$stationId');
+  }
+
+  /// POST /api/stations/{stationId}/checkin
+  Future<Response> checkinStation(int stationId, String status) async {
+    return await _dioClient.dio.post(
+      '/api/stations/$stationId/checkin',
+      data: {'status': status},
+    );
   }
 }
