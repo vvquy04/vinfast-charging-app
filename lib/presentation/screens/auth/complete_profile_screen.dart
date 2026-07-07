@@ -258,7 +258,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       'password': password,
       'fullName': name,
       'email': email.isNotEmpty ? email : null,
-      'gender': _selectedGender,
+      'gender': _selectedGender == 'Nam'
+          ? 'MALE'
+          : _selectedGender == 'Nữ'
+              ? 'FEMALE'
+              : _selectedGender == 'Khác'
+                  ? 'OTHER'
+                  : null,
       'dateOfBirth': _selectedDate != null
           ? "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}"
           : null,

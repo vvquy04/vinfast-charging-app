@@ -279,7 +279,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +307,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                           : 'Hãy là người đầu tiên check-in tại đây!',
                       style: TextStyle(
                         fontSize: 12,
-                        color: color.withOpacity(0.8),
+                        color: color.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -353,24 +353,58 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text(
-            'Check-in & Báo cáo',
+            'Check-in',
+            textAlign: TextAlign.center,
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Chọn tình trạng hiện tại bạn quan sát thấy tại trạm để báo cáo cho cộng đồng và nhận 10 điểm thưởng.',
+                'Chọn tình trạng hiện tại bạn quan sát thấy tại trạm để đóng góp cho cộng đồng và nhận ngay 10 điểm thưởng nhé',
+                textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: AppColors.gray),
               ),
               const SizedBox(height: 16),
-              _buildCheckinOption(ctx, provider, detail, 'EMPTY', '🟢 Trống chỗ'),
+              _buildCheckinOption(
+                ctx,
+                provider,
+                detail,
+                'EMPTY',
+                Icons.check_circle_rounded,
+                const Color(0xFF2E7D32),
+                'Trống chỗ',
+              ),
               const SizedBox(height: 8),
-              _buildCheckinOption(ctx, provider, detail, 'MODERATE', '🟡 Vừa phải'),
+              _buildCheckinOption(
+                ctx,
+                provider,
+                detail,
+                'MODERATE',
+                Icons.info_rounded,
+                const Color(0xFFF57C00),
+                'Vừa phải',
+              ),
               const SizedBox(height: 8),
-              _buildCheckinOption(ctx, provider, detail, 'BUSY', '🔴 Đang bận / Đầy'),
+              _buildCheckinOption(
+                ctx,
+                provider,
+                detail,
+                'BUSY',
+                Icons.remove_circle_rounded,
+                const Color(0xFFD32F2F),
+                'Đang bận / Đầy',
+              ),
               const SizedBox(height: 8),
-              _buildCheckinOption(ctx, provider, detail, 'MAINTENANCE', '❌ Đang bảo trì'),
+              _buildCheckinOption(
+                ctx,
+                provider,
+                detail,
+                'MAINTENANCE',
+                Icons.build_rounded,
+                const Color(0xFF757575),
+                'Đang bảo trì',
+              ),
             ],
           ),
         );
@@ -379,14 +413,22 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   }
 
   Widget _buildCheckinOption(
-      BuildContext dialogCtx, StationProvider provider, StationDetailModel detail, String status, String label) {
+    BuildContext dialogCtx,
+    StationProvider provider,
+    StationDetailModel detail,
+    String status,
+    IconData icon,
+    Color iconColor,
+    String labelText,
+  ) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton(
+      child: OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           side: const BorderSide(color: AppColors.smoke, width: 1.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          alignment: Alignment.center,
         ),
         onPressed: () async {
           Navigator.pop(dialogCtx);
@@ -399,16 +441,21 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
             
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(provider.checkinMessage ?? 'Đã gửi báo cáo!'),
+                content: Text(provider.checkinMessage ?? 'Đã gửi!'),
                 backgroundColor: success ? const Color(0xFF43A047) : AppColors.error,
                 behavior: SnackBarBehavior.floating,
               ),
             );
           }
         },
-        child: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.charcoal, fontSize: 14),
+        icon: Icon(icon, color: iconColor, size: 20),
+        label: Text(
+          labelText,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.charcoal,
+            fontSize: 14,
+          ),
         ),
       ),
     );
@@ -416,14 +463,34 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
 
   Widget _buildPopularTimesChart(Map<String, List<int>> popularTimes) {
     final busyList = popularTimes[_selectedDay] ?? List.filled(24, 0);
-    final currentHour = DateTime.now().hour;
+    final now = DateTime.now();
+    final currentHour = now.hour;
+    final todayWeekday = now.weekday; // 1 = Thứ 2, 7 = Chủ nhật
+    final days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    final selectedDayIndex = days.indexOf(_selectedDay) + 1;
+
+    final isToday = selectedDayIndex == todayWeekday;
+    final isFutureDay = selectedDayIndex > todayWeekday;
     final currentVal = busyList[currentHour];
 
-    String statusText = 'Hiện tại: Trạm bận trung bình';
-    if (currentVal > 75) {
-      statusText = '🔥 Hiện tại: Giờ cao điểm, thời gian chờ khoảng 15-20 phút';
-    } else if (currentVal < 35) {
-      statusText = '🍃 Hiện tại: Trạm đang vắng hơn bình thường';
+    IconData statusIcon = Icons.info_outline_rounded;
+    Color iconColor = AppColors.charcoal;
+    String statusText = isToday ? 'Hiện tại: Trạm bận trung bình' : (isFutureDay ? 'Chưa đến ngày này trong tuần' : 'Thông lệ: Trạm bận trung bình');
+
+    if (isFutureDay) {
+      statusIcon = Icons.schedule_rounded;
+      iconColor = AppColors.gray;
+    } else {
+      final prefix = isToday ? 'Hiện tại: ' : 'Thông lệ: ';
+      if (currentVal > 75) {
+        statusIcon = Icons.whatshot_rounded;
+        iconColor = const Color(0xFFE65100);
+        statusText = '${prefix}Giờ cao điểm, thời gian chờ khoảng 15-20 phút';
+      } else if (currentVal < 35) {
+        statusIcon = Icons.eco_rounded;
+        iconColor = const Color(0xFF2E7D32);
+        statusText = '${prefix}Trạm đang vắng hơn bình thường';
+      }
     }
 
     final dayLabels = {
@@ -453,12 +520,12 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Giờ cao điểm & Bận rộn',
+                      'Thời gian phổ biến',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.black),
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'Biểu đồ hiển thị xu hướng bận rộn trung bình của trạm',
+                      'Mức độ sử dụng trạm trung bình theo từng giờ',
                       style: TextStyle(fontSize: 11, color: AppColors.gray),
                     ),
                   ],
@@ -487,70 +554,112 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            statusText,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.charcoal,
-            ),
+          Row(
+            children: [
+              Icon(
+                statusIcon,
+                color: iconColor,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  statusText,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 120,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(24, (hour) {
-                final val = busyList[hour];
-                final isCurrent = hour == currentHour;
-
-                // Chỉ hiển thị nhãn giờ cho 0h, 6h, 12h, 18h, 23h để tránh đè chữ
-                String hourLabel = '';
-                if (hour == 0 || hour == 6 || hour == 12 || hour == 18 || hour == 23) {
-                  hourLabel = '${hour.toString().padLeft(2, '0')}h';
-                }
-
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          isCurrent ? '$val%' : '',
-                          style: const TextStyle(
-                            fontSize: 7,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Container(
-                          height: val * 0.8, // Tỉ lệ chiều cao tối đa 80px
-                          decoration: BoxDecoration(
-                            color: isCurrent ? AppColors.primary : AppColors.gray.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        SizedBox(
-                          height: 12,
-                          child: Text(
-                            hourLabel,
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: isCurrent ? AppColors.primary : AppColors.gray,
-                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+          // Biểu đồ thời gian phổ biến dạng 24 cột liên tiếp
+          Column(
+            children: [
+              SizedBox(
+                height: 100,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(24, (hour) {
+                    final isFutureHour = isFutureDay || (isToday && hour > currentHour);
+                    final val = isFutureHour ? 0 : busyList[hour];
+                    final isCurrent = isToday && hour == currentHour;
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            if (isCurrent)
+                              FittedBox(
+                                fit: BoxFit.none,
+                                child: Text(
+                                  '$val%',
+                                  style: const TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 2),
+                            Container(
+                              width: double.infinity,
+                              height: val * 0.8,
+                              decoration: BoxDecoration(
+                                color: isCurrent
+                                    ? AppColors.primary
+                                    : AppColors.gray.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Nhãn các mốc giờ chính dưới biểu đồ
+              Row(
+                children: List.generate(24, (hour) {
+                  String label = '';
+                  if (hour == 0) {
+                    label = '0h';
+                  } else if (hour == 6) {
+                    label = '6h';
+                  } else if (hour == 12) {
+                    label = '12h';
+                  } else if (hour == 18) {
+                    label = '18h';
+                  } else if (hour == 23) {
+                    label = '23h';
+                  }
+
+                  // Hiển thị giờ hiện tại nếu đang xem ngày hôm nay
+                  if (isToday && hour == currentHour) {
+                    label = '${hour}h';
+                  }
+
+                  final isCurrent = isToday && hour == currentHour;
+
+                  return Expanded(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 8.5,
+                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                        color: isCurrent ? AppColors.primary : AppColors.gray,
+                      ),
                     ),
-                  ),
-                );
-              }),
-            ),
+                  );
+                }),
+              ),
+            ],
           ),
         ],
       ),

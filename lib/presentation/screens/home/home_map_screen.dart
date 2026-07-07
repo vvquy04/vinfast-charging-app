@@ -27,6 +27,7 @@ class HomeMapScreen extends StatefulWidget {
 class _HomeMapScreenState extends State<HomeMapScreen> {
   TrackAsiaMapController? _mapController;
   bool _isMapReady = false;
+  bool _hasCenteredOnUser = false;
 
   // Đường dẫn cấu hình giao diện bản đồ TrackAsia (sử dụng key dùng thử công khai)
   static const String _styleUrl =
@@ -355,9 +356,17 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           SymbolOptions(
             geometry: userLatLng,
             iconImage: 'user-marker',
-            iconSize: 0.5,
+            iconSize: 1.0,
             iconAnchor: 'center',
           ),
+        );
+      }
+
+      // Tự động di chuyển camera đến vị trí của người dùng khi được tải lần đầu tiên
+      if (!_hasCenteredOnUser) {
+        _hasCenteredOnUser = true;
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(userLatLng, 14.5),
         );
       }
     }
@@ -820,10 +829,26 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   Widget _buildTopsisFilters(StationProvider provider) {
     final filters = [
-      {'key': 'power', 'label': '⚡ Sạc siêu nhanh'},
-      {'key': 'distance', 'label': '📍 Gần nhất'},
-      {'key': 'occupancy', 'label': '🍃 Trạm vắng vẻ'},
-      {'key': 'rating', 'label': '⭐ Đánh giá tốt'},
+      {
+        'key': 'power',
+        'label': 'Sạc siêu nhanh',
+        'icon': Icons.bolt_rounded,
+      },
+      {
+        'key': 'distance',
+        'label': 'Gần nhất',
+        'icon': Icons.location_on_rounded,
+      },
+      {
+        'key': 'occupancy',
+        'label': 'Trạm vắng vẻ',
+        'icon': Icons.eco_rounded,
+      },
+      {
+        'key': 'rating',
+        'label': 'Đánh giá tốt',
+        'icon': Icons.star_rounded,
+      },
     ];
 
     return SizedBox(
@@ -834,8 +859,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final filter = filters[index];
-          final key = filter['key']!;
-          final label = filter['label']!;
+          final key = filter['key'] as String;
+          final label = filter['label'] as String;
+          final icon = filter['icon'] as IconData;
           final isActive = provider.activeTopsisFilters.contains(key);
 
           return GestureDetector(
@@ -866,13 +892,24 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       ],
               ),
               child: Center(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                    color: isActive ? Colors.white : AppColors.charcoal,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isActive ? Colors.white : AppColors.charcoal,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                        color: isActive ? Colors.white : AppColors.charcoal,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

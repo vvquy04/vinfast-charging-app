@@ -106,7 +106,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: AppSizes.md),
                       _buildInfoRow('Email', profile.email ?? 'Chưa cập nhật'),
-                      _buildInfoRow('Giới tính', profile.gender ?? 'Chưa cập nhật'),
+                      _buildInfoRow(
+                        'Giới tính',
+                        profile.gender == 'MALE'
+                            ? 'Nam'
+                            : profile.gender == 'FEMALE'
+                                ? 'Nữ'
+                                : profile.gender == 'OTHER'
+                                    ? 'Khác'
+                                    : (profile.gender ?? 'Chưa cập nhật'),
+                      ),
                       _buildInfoRow('Ngày sinh', profile.dateOfBirth ?? 'Chưa cập nhật'),
                       _buildInfoRow('Điểm tích lũy 🎖️', '${profile.rewardPoints} điểm'),
                       
@@ -121,7 +130,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: AppSizes.md),
                       _buildInfoRow('Dòng xe', profile.vehicleModel ?? 'Chưa cập nhật'),
-                      _buildInfoRow('Loại cổng sạc', profile.connectorType ?? 'Chưa cập nhật'),
+                      _buildInfoRow(
+                        'Loại cổng sạc',
+                        profile.connectorType == 'CCS2'
+                            ? 'CCS2 (DC)'
+                            : profile.connectorType == 'AC'
+                                ? 'Type 2 (AC)'
+                                : (profile.connectorType ?? 'Chưa cập nhật'),
+                      ),
                     ],
                   ),
                 ),

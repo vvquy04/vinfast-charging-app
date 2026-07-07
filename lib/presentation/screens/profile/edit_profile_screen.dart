@@ -48,7 +48,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     
     _dateOfBirth = profile?.dateOfBirth;
     _vehicleModel = profile?.vehicleModel;
-    _connectorType = profile?.connectorType;
+    
+    final rawConnector = profile?.connectorType;
+    if (rawConnector == 'CCS2') {
+      _connectorType = 'CCS2 (DC)';
+    } else if (rawConnector == 'AC') {
+      _connectorType = 'Type 2 (AC)';
+    } else if (rawConnector == 'CHAdeMO') {
+      _connectorType = 'CHAdeMO';
+    } else {
+      _connectorType = rawConnector;
+    }
   }
 
   @override
@@ -102,7 +112,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final data = {
       if (_nameController.text.isNotEmpty) 'fullName': _nameController.text.trim(),
       if (_emailController.text.isNotEmpty) 'email': _emailController.text.trim(),
-      if (_gender != null) 'gender': _gender,
+      if (_gender != null)
+        'gender': _gender == 'Nam'
+            ? 'MALE'
+            : _gender == 'Nữ'
+                ? 'FEMALE'
+                : _gender == 'Khác'
+                    ? 'OTHER'
+                    : _gender,
       if (_dateOfBirth != null) 'dateOfBirth': _dateOfBirth,
       if (_vehicleModel != null) 'vehicleModel': _vehicleModel,
       if (_connectorType != null) 'connectorType': _connectorType,

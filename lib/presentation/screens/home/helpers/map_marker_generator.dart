@@ -19,47 +19,38 @@ class MapMarkerGenerator {
     }
   }
 
-  /// Tạo hình ảnh marker hình tròn cho người dùng
+  /// Tạo hình ảnh marker hình tròn cho người dùng (Chấm xanh kiểu Google Maps)
   static Future<Uint8List> createUserMarkerImage() async {
     const double size = 120;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Hiệu ứng vòng tròn lan tỏa
+    // 1. Vòng tròn xanh mờ lan tỏa phía ngoài cùng (pulsing halo)
     final pulsePaint = Paint()
-      ..color = AppColors.primary.withOpacity(0.25)
+      ..color = const Color(0x332196F3) // Màu xanh dương nhạt với opacity thấp
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(size / 2, size / 2), size / 2, pulsePaint);
+    canvas.drawCircle(const Offset(size / 2, size / 2), 48, pulsePaint);
 
-    // Viền tối ngoài cùng
-    final borderPaint = Paint()
-      ..color = AppColors.charcoal
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(size / 2, size / 2), 38, borderPaint);
+    // 2. Vẽ bóng mờ dưới vòng tròn trắng để tạo độ nổi khối (depth)
+    canvas.drawCircle(
+      const Offset(size / 2, size / 2 + 1.5),
+      18,
+      Paint()
+        ..color = Colors.black.withOpacity(0.15)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
 
-    // Vòng tròn trắng bên trong
+    // 3. Vòng tròn màu trắng làm viền cho chấm xanh
     final whitePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(size / 2, size / 2), 32, whitePaint);
+    canvas.drawCircle(const Offset(size / 2, size / 2), 18, whitePaint);
 
-    // Vẽ chữ "U" đại diện cho User
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'U',
-        style: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: AppColors.black,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset((size - textPainter.width) / 2, (size - textPainter.height) / 2),
-    );
+    // 4. Chấm tròn màu xanh dương đậm ở tâm
+    final bluePaint = Paint()
+      ..color = const Color(0xFF1A73E8) // Màu xanh Google Maps đặc trưng
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(size / 2, size / 2), 12, bluePaint);
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(size.toInt(), size.toInt());

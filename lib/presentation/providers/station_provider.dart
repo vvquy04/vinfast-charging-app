@@ -41,7 +41,7 @@ class StationProvider with ChangeNotifier {
   double? _lastFetchedLongitude;
 
   // ─── Trạng thái bộ lọc ─────────────────────────────
-  double _radius = 200.0;
+  double _radius = 15.0;
   double get radius => _radius;
 
   String? _connectorType;
