@@ -579,7 +579,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                             Icon(_getStatusIcon(selectedStatus!), color: _getStatusColor(selectedStatus!), size: 22),
                             const SizedBox(width: 12),
                             Text(
-                              'Báo cáo: ${_getStatusLabel(selectedStatus!)}',
+                              '${_getStatusLabel(selectedStatus!)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold, 
                                 color: _getStatusColor(selectedStatus!),
