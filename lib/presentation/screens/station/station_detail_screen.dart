@@ -392,23 +392,33 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
 
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Text(
-                'Check-in trạm sạc',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              titlePadding: const EdgeInsets.fromLTRB(24, 20, 16, 12),
+              title: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Check-in',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.gray, size: 22),
+                      onPressed: () => Navigator.pop(dialogContext),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ],
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (!isFormReady) ...[
-                      const Text(
-                        'Bước 1: Chọn tình trạng trạm sạc súng để kích hoạt camera chụp ảnh xác thực',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: AppColors.gray),
-                      ),
-                      const SizedBox(height: 20),
-                      
                       _buildCheckinSelectionButton(
                         dialogContext,
                         'EMPTY',
@@ -544,19 +554,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                           }
                         },
                       ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('Hủy bỏ', style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.bold)),
-                      ),
                     ] else ...[
-                      const Text(
-                        'Bước 2: Xác nhận gửi báo cáo kèm hình ảnh xác thực',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: AppColors.gray),
-                      ),
-                      const SizedBox(height: 16),
-                      
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.file(
@@ -608,7 +606,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                             elevation: 0,
                           ),
                           child: const Text(
-                            'Xác nhận gửi check-in',
+                            'Xác nhận',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                         ),
@@ -630,7 +628,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text(
-                            'Chụp lại ảnh / Chọn lại trạng thái',
+                            'Huỷ',
                             style: TextStyle(color: AppColors.charcoal, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
