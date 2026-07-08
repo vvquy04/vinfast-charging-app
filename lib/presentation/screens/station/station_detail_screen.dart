@@ -371,8 +371,8 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   String _getStatusLabel(String status) {
     switch (status) {
       case 'EMPTY': return 'Trống chỗ';
-      case 'MODERATE': return 'Vừa phải';
-      case 'BUSY': return 'Đang bận / Đầy';
+      case 'MODERATE': return 'Bình thường';
+      case 'BUSY': return 'Đông';
       case 'MAINTENANCE': return 'Đang bảo trì';
       default: return status;
     }
