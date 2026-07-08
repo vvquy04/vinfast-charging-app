@@ -348,69 +348,76 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     );
   }
 
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'EMPTY': return Icons.check_circle_rounded;
+      case 'MODERATE': return Icons.info_rounded;
+      case 'BUSY': return Icons.remove_circle_rounded;
+      case 'MAINTENANCE': return Icons.build_rounded;
+      default: return Icons.help_outline;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'EMPTY': return const Color(0xFF2E7D32);
+      case 'MODERATE': return const Color(0xFFF57C00);
+      case 'BUSY': return const Color(0xFFD32F2F);
+      case 'MAINTENANCE': return const Color(0xFF757575);
+      default: return Colors.black;
+    }
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status) {
+      case 'EMPTY': return 'Trống chỗ';
+      case 'MODERATE': return 'Vừa phải';
+      case 'BUSY': return 'Đang bận / Đầy';
+      case 'MAINTENANCE': return 'Đang bảo trì';
+      default: return status;
+    }
+  }
+
   void _showCheckinDialog(BuildContext context, StationProvider provider, StationDetailModel detail) {
+    String? selectedStatus;
     File? pickedFile;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (dialogContext, setState) {
+            final isFormReady = selectedStatus != null && pickedFile != null;
+
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: const Text(
-                'Check-in',
+                'Check-in trạm sạc',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Báo cáo tình trạng thực tế bạn quan sát thấy tại trạm để nhận ngay 10 điểm thưởng',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.gray),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // --- KHU VỰC CHỤP ẢNH ---
-                    if (pickedFile != null) ...[
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              pickedFile!,
-                              height: 120,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.black.withOpacity(0.6),
-                              child: IconButton(
-                                icon: const Icon(Icons.close, size: 16, color: Colors.white),
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  setState(() {
-                                    pickedFile = null;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
+                    if (!isFormReady) ...[
+                      const Text(
+                        'Bước 1: Chọn tình trạng trạm sạc súng để kích hoạt camera chụp ảnh xác thực',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: AppColors.gray),
                       ),
-                      const SizedBox(height: 12),
-                    ] else ...[
-                      OutlinedButton.icon(
-                        onPressed: () async {
+                      const SizedBox(height: 20),
+                      
+                      _buildCheckinSelectionButton(
+                        dialogContext,
+                        'EMPTY',
+                        Icons.check_circle_rounded,
+                        const Color(0xFF2E7D32),
+                        'Trống chỗ',
+                        (status) async {
                           try {
+                            final messenger = ScaffoldMessenger.of(context);
                             final picker = ImagePicker();
                             final pickedImage = await picker.pickImage(
                               source: ImageSource.camera,
@@ -419,71 +426,216 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                             );
                             if (pickedImage != null) {
                               setState(() {
+                                selectedStatus = status;
                                 pickedFile = File(pickedImage.path);
                               });
+                            } else {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Vui lòng chụp ảnh hiện trạng để xác thực check-in!'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                             }
                           } catch (e) {
                             debugPrint('Lỗi chụp ảnh: $e');
                           }
                         },
-                        icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-                        label: const Text(
-                          'Chụp ảnh (Không bắt buộc)',
-                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.primary, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildCheckinSelectionButton(
+                        dialogContext,
+                        'MODERATE',
+                        Icons.info_rounded,
+                        const Color(0xFFF57C00),
+                        'Vừa phải',
+                        (status) async {
+                          try {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final picker = ImagePicker();
+                            final pickedImage = await picker.pickImage(
+                              source: ImageSource.camera,
+                              imageQuality: 60,
+                              maxWidth: 1024,
+                            );
+                            if (pickedImage != null) {
+                              setState(() {
+                                selectedStatus = status;
+                                pickedFile = File(pickedImage.path);
+                              });
+                            } else {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Vui lòng chụp ảnh hiện trạng để xác thực check-in!'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            debugPrint('Lỗi chụp ảnh: $e');
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildCheckinSelectionButton(
+                        dialogContext,
+                        'BUSY',
+                        Icons.remove_circle_rounded,
+                        const Color(0xFFD32F2F),
+                        'Đang bận / Đầy',
+                        (status) async {
+                          try {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final picker = ImagePicker();
+                            final pickedImage = await picker.pickImage(
+                              source: ImageSource.camera,
+                              imageQuality: 60,
+                              maxWidth: 1024,
+                            );
+                            if (pickedImage != null) {
+                              setState(() {
+                                selectedStatus = status;
+                                pickedFile = File(pickedImage.path);
+                              });
+                            } else {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Vui lòng chụp ảnh hiện trạng để xác thực check-in!'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            debugPrint('Lỗi chụp ảnh: $e');
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildCheckinSelectionButton(
+                        dialogContext,
+                        'MAINTENANCE',
+                        Icons.build_rounded,
+                        const Color(0xFF757575),
+                        'Đang bảo trì',
+                        (status) async {
+                          try {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final picker = ImagePicker();
+                            final pickedImage = await picker.pickImage(
+                              source: ImageSource.camera,
+                              imageQuality: 60,
+                              maxWidth: 1024,
+                            );
+                            if (pickedImage != null) {
+                              setState(() {
+                                selectedStatus = status;
+                                pickedFile = File(pickedImage.path);
+                              });
+                            } else {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Vui lòng chụp ảnh hiện trạng để xác thực check-in!'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            debugPrint('Lỗi chụp ảnh: $e');
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('Hủy bỏ', style: TextStyle(color: AppColors.gray, fontWeight: FontWeight.bold)),
+                      ),
+                    ] else ...[
+                      const Text(
+                        'Bước 2: Xác nhận gửi báo cáo kèm hình ảnh xác thực',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: AppColors.gray),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          pickedFile!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(selectedStatus!).withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _getStatusColor(selectedStatus!).withOpacity(0.3), width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_getStatusIcon(selectedStatus!), color: _getStatusColor(selectedStatus!), size: 22),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Báo cáo: ${_getStatusLabel(selectedStatus!)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold, 
+                                color: _getStatusColor(selectedStatus!),
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(dialogContext);
+                            await _submitCheckin(context, provider, detail, selectedStatus!, pickedFile!);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Xác nhận gửi check-in',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedStatus = null;
+                              pickedFile = null;
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.smoke, width: 1.5),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text(
+                            'Chụp lại ảnh / Chọn lại trạng thái',
+                            style: TextStyle(color: AppColors.charcoal, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ),
                     ],
-                    
-                    // --- CÁC TÙY CHỌN TRẠNG THÁI ---
-                    _buildCheckinOption(
-                      ctx,
-                      provider,
-                      detail,
-                      'EMPTY',
-                      Icons.check_circle_rounded,
-                      const Color(0xFF2E7D32),
-                      'Trống chỗ',
-                      pickedFile,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildCheckinOption(
-                      ctx,
-                      provider,
-                      detail,
-                      'MODERATE',
-                      Icons.info_rounded,
-                      const Color(0xFFF57C00),
-                      'Vừa phải',
-                      pickedFile,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildCheckinOption(
-                      ctx,
-                      provider,
-                      detail,
-                      'BUSY',
-                      Icons.remove_circle_rounded,
-                      const Color(0xFFD32F2F),
-                      'Đang bận / Đầy',
-                      pickedFile,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildCheckinOption(
-                      ctx,
-                      provider,
-                      detail,
-                      'MAINTENANCE',
-                      Icons.build_rounded,
-                      const Color(0xFF757575),
-                      'Đang bảo trì',
-                      pickedFile,
-                    ),
                   ],
                 ),
               ),
@@ -494,75 +646,79 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     );
   }
 
-  Widget _buildCheckinOption(
-    BuildContext dialogCtx,
-    StationProvider provider,
-    StationDetailModel detail,
+  Widget _buildCheckinSelectionButton(
+    BuildContext ctx,
     String status,
     IconData icon,
     Color iconColor,
     String labelText,
-    File? imageFile,
+    Function(String) onTap,
   ) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           side: const BorderSide(color: AppColors.smoke, width: 1.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          alignment: Alignment.center,
+          alignment: Alignment.centerLeft,
         ),
-        onPressed: () async {
-          Navigator.pop(dialogCtx);
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  ),
-                  SizedBox(width: 16),
-                  Text('Đang gửi check-in...'),
-                ],
-              ),
-              duration: Duration(days: 1),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-
-          final success = await provider.checkinStation(detail.stationId, status, imageFile: imageFile);
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-            try {
-              context.read<ProfileProvider>().fetchProfile();
-            } catch (_) {}
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(provider.checkinMessage ?? 'Đã gửi!'),
-                backgroundColor: success ? const Color(0xFF43A047) : AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        },
-        icon: Icon(icon, color: iconColor, size: 20),
+        onPressed: () => onTap(status),
+        icon: Icon(icon, color: iconColor, size: 22),
         label: Text(
           labelText,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppColors.charcoal,
+            color: AppColors.black,
             fontSize: 14,
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _submitCheckin(
+    BuildContext context,
+    StationProvider provider,
+    StationDetailModel detail,
+    String status,
+    File imageFile,
+  ) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 16),
+            Text('Đang upload ảnh và gửi check-in...'),
+          ],
+        ),
+        duration: Duration(days: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    final success = await provider.checkinStation(detail.stationId, status, imageFile: imageFile);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      try {
+        context.read<ProfileProvider>().fetchProfile();
+      } catch (_) {}
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.checkinMessage ?? 'Đã gửi!'),
+          backgroundColor: success ? const Color(0xFF43A047) : AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Widget _buildPopularTimesChart(Map<String, List<int>> popularTimes) {
