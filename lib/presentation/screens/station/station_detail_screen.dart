@@ -324,7 +324,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
               onPressed: !isAuthenticated
                   ? () => ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Vui lòng đăng nhập để báo cáo trạng thái!'),
+                          content: Text('Vui lòng đăng nhập để checkin!'),
                           behavior: SnackBarBehavior.floating,
                         ),
                       )
