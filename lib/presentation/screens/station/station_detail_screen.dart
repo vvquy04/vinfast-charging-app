@@ -256,19 +256,19 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
           icon = Icons.check_circle_outline_rounded;
           break;
         case 'MODERATE':
-          statusText = 'Vừa phải';
+          statusText = 'Bình thường';
           color = const Color(0xFFF57C00);
           bgColor = const Color(0xFFFFF3E0);
           icon = Icons.hourglass_empty_rounded;
           break;
         case 'BUSY':
-          statusText = 'Đang bận / Đầy';
+          statusText = 'Đông';
           color = const Color(0xFFD32F2F);
           bgColor = const Color(0xFFFFEBEE);
           icon = Icons.error_outline_rounded;
           break;
         case 'MAINTENANCE':
-          statusText = 'Bảo trì';
+          statusText = 'Đang bảo trì';
           color = const Color(0xFFC2185B);
           bgColor = const Color(0xFFFCE4EC);
           icon = Icons.build_outlined;
@@ -458,7 +458,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                         'MODERATE',
                         Icons.info_rounded,
                         const Color(0xFFF57C00),
-                        'Vừa phải',
+                        'Bình thường',
                         (status) async {
                           try {
                             final messenger = ScaffoldMessenger.of(context);
@@ -492,7 +492,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                         'BUSY',
                         Icons.remove_circle_rounded,
                         const Color(0xFFD32F2F),
-                        'Đang bận / Đầy',
+                        'Đông',
                         (status) async {
                           try {
                             final messenger = ScaffoldMessenger.of(context);
@@ -579,7 +579,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                             Icon(_getStatusIcon(selectedStatus!), color: _getStatusColor(selectedStatus!), size: 22),
                             const SizedBox(width: 12),
                             Text(
-                              '${_getStatusLabel(selectedStatus!)}',
+                              _getStatusLabel(selectedStatus!),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold, 
                                 color: _getStatusColor(selectedStatus!),

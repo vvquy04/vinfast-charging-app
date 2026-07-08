@@ -418,17 +418,17 @@ class StationPreviewCard extends StatelessWidget {
           bgColor = const Color(0xFFE8F5E9);
           break;
         case 'MODERATE':
-          text = '🟡 Vừa phải';
+          text = '🟡 Bình thường';
           color = const Color(0xFFF57C00);
           bgColor = const Color(0xFFFFF3E0);
           break;
         case 'BUSY':
-          text = '🔴 Đang bận';
+          text = '🔴 Đông';
           color = const Color(0xFFD32F2F);
           bgColor = const Color(0xFFFFEBEE);
           break;
         case 'MAINTENANCE':
-          text = '❌ Bảo trì';
+          text = '❌ Đang bảo trì';
           color = const Color(0xFFC2185B);
           bgColor = const Color(0xFFFCE4EC);
           break;
