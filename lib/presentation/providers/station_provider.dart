@@ -255,6 +255,7 @@ class StationProvider with ChangeNotifier {
       ).catchError((e) {
         debugPrint('Timeout lấy GPS chính xác - sử dụng vị trí gần nhất: $e');
         if (lastPosition != null) return lastPosition;
+        if (_currentPosition != null) return _currentPosition!; // Giữ nguyên vị trí cũ đang hiển thị, tránh nhảy về Hoàn Kiếm
         // Nếu hoàn toàn chưa có vị trí nào, trả về vị trí mặc định Hà Nội để tránh lỗi
         return Position(
           latitude: _defaultLatitude,
