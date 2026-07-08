@@ -28,6 +28,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   TrackAsiaMapController? _mapController;
   bool _isMapReady = false;
   bool _hasCenteredOnUser = false;
+  bool _isProgrammaticMovement = false;
 
   // Đường dẫn cấu hình giao diện bản đồ TrackAsia (sử dụng key dùng thử công khai)
   static const String _styleUrl =
@@ -195,6 +196,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             routePoints.map((p) => p.longitude).reduce((a, b) => a > b ? a : b),
           ),
         );
+        _isProgrammaticMovement = true;
         _mapController!.animateCamera(
           CameraUpdate.newLatLngBounds(
             bounds,
@@ -365,6 +367,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       // Tự động di chuyển camera đến vị trí của người dùng khi được tải lần đầu tiên
       if (!_hasCenteredOnUser) {
         _hasCenteredOnUser = true;
+        _isProgrammaticMovement = true;
         _mapController!.animateCamera(
           CameraUpdate.newLatLngZoom(userLatLng, 14.5),
         );
@@ -432,6 +435,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           final station = provider.stations.firstWhere(
             (s) => s.stationId == stationId,
           );
+          _isProgrammaticMovement = true;
           _mapController?.animateCamera(
             CameraUpdate.newLatLngZoom(
               LatLng(station.latitude, station.longitude),
@@ -463,6 +467,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 trackCameraPosition: true,
                 compassEnabled: false,
                 onCameraIdle: () {
+                  if (_isProgrammaticMovement) {
+                    _isProgrammaticMovement = false;
+                    return;
+                  }
                   if (_mapController != null) {
                     final target = _mapController!.cameraPosition?.target;
                     if (target != null) {
@@ -511,6 +519,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       provider.fetchStationDetail(station.stationId);
 
                       // Di chuyển camera bản đồ đến trạm sạc được chọn
+                      _isProgrammaticMovement = true;
                       _mapController?.animateCamera(
                         CameraUpdate.newLatLngZoom(
                           LatLng(station.latitude, station.longitude),
@@ -533,6 +542,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                         await provider.moveToCurrentLocation();
                         if (provider.currentPosition != null &&
                             _mapController != null) {
+                          _isProgrammaticMovement = true;
                           _mapController!.animateCamera(
                             CameraUpdate.newLatLngZoom(
                               LatLng(
@@ -722,6 +732,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             userVehicleModel: provider.userVehicleModel,
                             onStationTap: (station) {
                               provider.fetchStationDetail(station.stationId);
+                              _isProgrammaticMovement = true;
                               _mapController?.animateCamera(
                                 CameraUpdate.newLatLngZoom(
                                   LatLng(station.latitude, station.longitude),
