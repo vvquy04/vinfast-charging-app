@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/station_provider.dart';
 import '../../providers/review_provider.dart';
 import '../../providers/history_provider.dart';
@@ -347,66 +349,146 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   }
 
   void _showCheckinDialog(BuildContext context, StationProvider provider, StationDetailModel detail) {
+    File? pickedFile;
+
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text(
-            'Check-in',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Chọn tình trạng hiện tại bạn quan sát thấy tại trạm để đóng góp cho cộng đồng và nhận ngay 10 điểm thưởng nhé',
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text(
+                'Check-in',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppColors.gray),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
-              _buildCheckinOption(
-                ctx,
-                provider,
-                detail,
-                'EMPTY',
-                Icons.check_circle_rounded,
-                const Color(0xFF2E7D32),
-                'Trống chỗ',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Báo cáo tình trạng thực tế bạn quan sát thấy tại trạm để nhận ngay 10 điểm thưởng',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: AppColors.gray),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // --- KHU VỰC CHỤP ẢNH ---
+                    if (pickedFile != null) ...[
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              pickedFile!,
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.black.withOpacity(0.6),
+                              child: IconButton(
+                                icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                                padding: EdgeInsets.zero,
+                                onPressed: () {
+                                  setState(() {
+                                    pickedFile = null;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ] else ...[
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          try {
+                            final picker = ImagePicker();
+                            final pickedImage = await picker.pickImage(
+                              source: ImageSource.camera,
+                              imageQuality: 60,
+                              maxWidth: 1024,
+                            );
+                            if (pickedImage != null) {
+                              setState(() {
+                                pickedFile = File(pickedImage.path);
+                              });
+                            }
+                          } catch (e) {
+                            debugPrint('Lỗi chụp ảnh: $e');
+                          }
+                        },
+                        icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                        label: const Text(
+                          'Chụp ảnh (Không bắt buộc)',
+                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary, width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // --- CÁC TÙY CHỌN TRẠNG THÁI ---
+                    _buildCheckinOption(
+                      ctx,
+                      provider,
+                      detail,
+                      'EMPTY',
+                      Icons.check_circle_rounded,
+                      const Color(0xFF2E7D32),
+                      'Trống chỗ',
+                      pickedFile,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildCheckinOption(
+                      ctx,
+                      provider,
+                      detail,
+                      'MODERATE',
+                      Icons.info_rounded,
+                      const Color(0xFFF57C00),
+                      'Vừa phải',
+                      pickedFile,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildCheckinOption(
+                      ctx,
+                      provider,
+                      detail,
+                      'BUSY',
+                      Icons.remove_circle_rounded,
+                      const Color(0xFFD32F2F),
+                      'Đang bận / Đầy',
+                      pickedFile,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildCheckinOption(
+                      ctx,
+                      provider,
+                      detail,
+                      'MAINTENANCE',
+                      Icons.build_rounded,
+                      const Color(0xFF757575),
+                      'Đang bảo trì',
+                      pickedFile,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              _buildCheckinOption(
-                ctx,
-                provider,
-                detail,
-                'MODERATE',
-                Icons.info_rounded,
-                const Color(0xFFF57C00),
-                'Vừa phải',
-              ),
-              const SizedBox(height: 8),
-              _buildCheckinOption(
-                ctx,
-                provider,
-                detail,
-                'BUSY',
-                Icons.remove_circle_rounded,
-                const Color(0xFFD32F2F),
-                'Đang bận / Đầy',
-              ),
-              const SizedBox(height: 8),
-              _buildCheckinOption(
-                ctx,
-                provider,
-                detail,
-                'MAINTENANCE',
-                Icons.build_rounded,
-                const Color(0xFF757575),
-                'Đang bảo trì',
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -420,6 +502,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     IconData icon,
     Color iconColor,
     String labelText,
+    File? imageFile,
   ) {
     return SizedBox(
       width: double.infinity,
@@ -432,9 +515,30 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
         ),
         onPressed: () async {
           Navigator.pop(dialogCtx);
-          final success = await provider.checkinStation(detail.stationId, status);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  ),
+                  SizedBox(width: 16),
+                  Text('Đang gửi check-in...'),
+                ],
+              ),
+              duration: Duration(days: 1),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+
+          final success = await provider.checkinStation(detail.stationId, status, imageFile: imageFile);
+          
           if (mounted) {
-            // Cập nhật lại thông tin profile để cập nhật điểm tích lũy
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
             try {
               context.read<ProfileProvider>().fetchProfile();
             } catch (_) {}

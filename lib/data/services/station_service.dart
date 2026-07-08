@@ -58,10 +58,14 @@ class StationService {
   }
 
   /// POST /api/stations/{stationId}/checkin
-  Future<Response> checkinStation(int stationId, String status) async {
+  Future<Response> checkinStation(int stationId, String status, {String? imageUrl}) async {
+    final Map<String, dynamic> data = {'status': status};
+    if (imageUrl != null) {
+      data['imageUrl'] = imageUrl;
+    }
     return await _dioClient.dio.post(
       '/api/stations/$stationId/checkin',
-      data: {'status': status},
+      data: data,
     );
   }
 }

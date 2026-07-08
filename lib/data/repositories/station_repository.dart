@@ -61,9 +61,9 @@ class StationRepository {
   }
 
   /// Check-in tại trạm sạc và báo cáo trạng thái
-  Future<String> checkinStation(int stationId, String status) async {
+  Future<String> checkinStation(int stationId, String status, {String? imageUrl}) async {
     try {
-      final response = await _stationService.checkinStation(stationId, status);
+      final response = await _stationService.checkinStation(stationId, status, imageUrl: imageUrl);
       if (response.statusCode == 200) {
         return response.data['message'] ?? 'Check-in thành công!';
       }

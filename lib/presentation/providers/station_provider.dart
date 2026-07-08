@@ -1,11 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../data/models/station_summary_model.dart';
 import '../../data/models/station_detail_model.dart';
 import '../../data/repositories/station_repository.dart';
+import '../../data/services/upload_service.dart';
 
 class StationProvider with ChangeNotifier {
   final StationRepository _repository;
+  final UploadService _uploadService;
+
+  StationProvider(this._repository, this._uploadService) {
+    _initLocation();
+  }
 
   List<StationSummaryModel> _stations = [];
   List<StationSummaryModel> get stations => _stations;
@@ -90,9 +97,7 @@ class StationProvider with ChangeNotifier {
   bool get hasActiveFilters =>
       _connectorType != null || _minPowerKw != null || _minRating != null || _isFilteringByVehicle || _useTopsis;
   
-  StationProvider(this._repository) {
-    _initLocation();
-  }
+  // Constructor initialized above
 
   // ═══════════════════════════════════════════════════
   // TOPSIS FILTERS
@@ -129,13 +134,18 @@ class StationProvider with ChangeNotifier {
   // ═══════════════════════════════════════════════════
 
   /// Gọi API check-in tại trạm sạc
-  Future<bool> checkinStation(int stationId, String status) async {
+  Future<bool> checkinStation(int stationId, String status, {File? imageFile}) async {
     _isCheckinLoading = true;
     _checkinMessage = null;
     notifyListeners();
 
     try {
-      final message = await _repository.checkinStation(stationId, status);
+      String? imageUrl;
+      if (imageFile != null) {
+        imageUrl = await _uploadService.uploadCheckin(imageFile);
+      }
+
+      final message = await _repository.checkinStation(stationId, status, imageUrl: imageUrl);
       _checkinMessage = message;
 
       // Tải lại chi tiết trạm sạc để cập nhật trạng thái

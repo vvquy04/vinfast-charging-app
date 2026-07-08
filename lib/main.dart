@@ -61,6 +61,7 @@ void main() {
         ChangeNotifierProvider(
           create: (_) => StationProvider(
             StationRepository(StationService(dioClient)),
+            UploadService(dioClient),
           ),
         ),
         ChangeNotifierProvider(
