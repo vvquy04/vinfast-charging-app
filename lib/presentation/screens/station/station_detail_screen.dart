@@ -262,7 +262,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
           icon = Icons.hourglass_empty_rounded;
           break;
         case 'BUSY':
-          statusText = 'Đông';
+          statusText = 'Đông đúc';
           color = const Color(0xFFD32F2F);
           bgColor = const Color(0xFFFFEBEE);
           icon = Icons.error_outline_rounded;
@@ -372,7 +372,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     switch (status) {
       case 'EMPTY': return 'Trống chỗ';
       case 'MODERATE': return 'Bình thường';
-      case 'BUSY': return 'Đông';
+      case 'BUSY': return 'Đông đúc';
       case 'MAINTENANCE': return 'Đang bảo trì';
       default: return status;
     }
@@ -492,7 +492,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                         'BUSY',
                         Icons.remove_circle_rounded,
                         const Color(0xFFD32F2F),
-                        'Đông',
+                        'Đông đúc',
                         (status) async {
                           try {
                             final messenger = ScaffoldMessenger.of(context);

@@ -413,22 +413,22 @@ class StationPreviewCard extends StatelessWidget {
     if (status != null) {
       switch (status) {
         case 'EMPTY':
-          text = '🟢 Trống chỗ';
+          text = 'Trống chỗ';
           color = const Color(0xFF2E7D32);
           bgColor = const Color(0xFFE8F5E9);
           break;
         case 'MODERATE':
-          text = '🟡 Bình thường';
+          text = 'Bình thường';
           color = const Color(0xFFF57C00);
           bgColor = const Color(0xFFFFF3E0);
           break;
         case 'BUSY':
-          text = '🔴 Đông';
+          text = 'Đông đúc';
           color = const Color(0xFFD32F2F);
           bgColor = const Color(0xFFFFEBEE);
           break;
         case 'MAINTENANCE':
-          text = '❌ Đang bảo trì';
+          text = 'Đang bảo trì';
           color = const Color(0xFFC2185B);
           bgColor = const Color(0xFFFCE4EC);
           break;
