@@ -237,11 +237,41 @@ class StationProvider with ChangeNotifier {
         return;
       }
 
+      // 1. Lấy vị trí đã biết gần nhất trước để hiển thị ngay lập tức (tránh chờ lâu)
+      Position? lastPosition = await Geolocator.getLastKnownPosition();
+      if (lastPosition != null) {
+        _currentPosition = lastPosition;
+        _searchLatitude = lastPosition.latitude;
+        _searchLongitude = lastPosition.longitude;
+        _usingDefaultLocation = false;
+        notifyListeners();
+        fetchNearbyStations(); // Tải trạm sạc ngay lập tức với vị trí cũ trước
+      }
+
+      // 2. Chạy ngầm lấy vị trí GPS cập nhật với giới hạn tối đa 3 giây
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+        desiredAccuracy: LocationAccuracy.medium, // Medium sẽ trả về nhanh hơn rất nhiều so với High
+        timeLimit: const Duration(seconds: 3),    // Quá 3 giây sẽ nhảy vào catchError
+      ).catchError((e) {
+        debugPrint('Timeout lấy GPS chính xác - sử dụng vị trí gần nhất: $e');
+        if (lastPosition != null) return lastPosition;
+        // Nếu hoàn toàn chưa có vị trí nào, trả về vị trí mặc định Hà Nội để tránh lỗi
+        return Position(
+          latitude: _defaultLatitude,
+          longitude: _defaultLongitude,
+          timestamp: DateTime.now(),
+          accuracy: 0,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        );
+      });
+
       _currentPosition = position;
-      _usingDefaultLocation = false;
+      _usingDefaultLocation = (position.latitude == _defaultLatitude && position.longitude == _defaultLongitude);
       
       _searchLatitude = position.latitude;
       _searchLongitude = position.longitude;
