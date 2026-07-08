@@ -20,12 +20,21 @@ class StationService {
     double weightPower = 1.0,
     double weightOccupancy = 1.0,
     double weightRating = 1.0,
+    double? userLatitude,
+    double? userLongitude,
   }) async {
     final Map<String, dynamic> queryParams = {
       'latitude': latitude,
       'longitude': longitude,
       'radius': radius,
     };
+
+    if (userLatitude != null) {
+      queryParams['userLatitude'] = userLatitude;
+    }
+    if (userLongitude != null) {
+      queryParams['userLongitude'] = userLongitude;
+    }
     
     if (connectorType != null && connectorType.isNotEmpty) {
       queryParams['connectorType'] = connectorType;

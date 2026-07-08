@@ -21,6 +21,8 @@ class StationRepository {
     double weightPower = 1.0,
     double weightOccupancy = 1.0,
     double weightRating = 1.0,
+    double? userLatitude,
+    double? userLongitude,
   }) async {
     try {
       final response = await _stationService.searchStations(
@@ -36,6 +38,8 @@ class StationRepository {
         weightPower: weightPower,
         weightOccupancy: weightOccupancy,
         weightRating: weightRating,
+        userLatitude: userLatitude,
+        userLongitude: userLongitude,
       );
 
       if (response.statusCode == 200) {

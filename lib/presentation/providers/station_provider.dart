@@ -361,6 +361,8 @@ class StationProvider with ChangeNotifier {
         weightPower: weightPower,
         weightOccupancy: weightOccupancy,
         weightRating: weightRating,
+        userLatitude: _currentPosition?.latitude,
+        userLongitude: _currentPosition?.longitude,
       );
       _stations = data;
       _lastFetchedLatitude = searchLat;
