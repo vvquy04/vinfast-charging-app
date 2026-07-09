@@ -728,27 +728,21 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     final selectedDayIndex = days.indexOf(_selectedDay) + 1;
 
     final isToday = selectedDayIndex == todayWeekday;
-    final isFutureDay = selectedDayIndex > todayWeekday;
     final currentVal = busyList[currentHour];
 
     IconData statusIcon = Icons.info_outline_rounded;
     Color iconColor = AppColors.charcoal;
-    String statusText = isToday ? 'Hiện tại: Trạm bận trung bình' : (isFutureDay ? 'Chưa đến ngày này trong tuần' : 'Thông lệ: Trạm bận trung bình');
+    String statusText = isToday ? 'Hiện tại: Trạm bận trung bình' : 'Thông lệ: Trạm bận trung bình';
 
-    if (isFutureDay) {
-      statusIcon = Icons.schedule_rounded;
-      iconColor = AppColors.gray;
-    } else {
-      final prefix = isToday ? 'Hiện tại: ' : 'Thông lệ: ';
-      if (currentVal > 75) {
-        statusIcon = Icons.whatshot_rounded;
-        iconColor = const Color(0xFFE65100);
-        statusText = '${prefix}Giờ cao điểm, thời gian chờ khoảng 15-20 phút';
-      } else if (currentVal < 35) {
-        statusIcon = Icons.eco_rounded;
-        iconColor = const Color(0xFF2E7D32);
-        statusText = '${prefix}Trạm đang vắng hơn bình thường';
-      }
+    final prefix = isToday ? 'Hiện tại: ' : 'Thông lệ: ';
+    if (currentVal > 75) {
+      statusIcon = Icons.whatshot_rounded;
+      iconColor = const Color(0xFFE65100);
+      statusText = '${prefix}Giờ cao điểm, thời gian chờ khoảng 15-20 phút';
+    } else if (currentVal < 35) {
+      statusIcon = Icons.eco_rounded;
+      iconColor = const Color(0xFF2E7D32);
+      statusText = '${prefix}Trạm đang vắng hơn bình thường';
     }
 
     final dayLabels = {
@@ -841,8 +835,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: List.generate(24, (hour) {
-                    final isFutureHour = isFutureDay || (isToday && hour > currentHour);
-                    final val = isFutureHour ? 0 : busyList[hour];
+                    final val = busyList[hour];
                     final isCurrent = isToday && hour == currentHour;
                     return Expanded(
                       child: Padding(
