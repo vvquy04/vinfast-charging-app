@@ -14,7 +14,15 @@ class StationRepository {
     double radius = 10,
     String? connectorType,
     int? minPowerKw,
+    int? maxPowerKw,
     double? minRating,
+    bool useTopsis = false,
+    double weightDistance = 1.0,
+    double weightPower = 1.0,
+    double weightOccupancy = 1.0,
+    double weightRating = 1.0,
+    double? userLatitude,
+    double? userLongitude,
   }) async {
     try {
       final response = await _stationService.searchStations(
@@ -23,7 +31,15 @@ class StationRepository {
         radius: radius,
         connectorType: connectorType,
         minPowerKw: minPowerKw,
+        maxPowerKw: maxPowerKw,
         minRating: minRating,
+        useTopsis: useTopsis,
+        weightDistance: weightDistance,
+        weightPower: weightPower,
+        weightOccupancy: weightOccupancy,
+        weightRating: weightRating,
+        userLatitude: userLatitude,
+        userLongitude: userLongitude,
       );
 
       if (response.statusCode == 200) {
@@ -43,6 +59,19 @@ class StationRepository {
         return StationDetailModel.fromJson(response.data['data']);
       }
       throw Exception(response.data['message'] ?? 'Failed to fetch station detail');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Network error');
+    }
+  }
+
+  /// Check-in tại trạm sạc và báo cáo trạng thái
+  Future<String> checkinStation(int stationId, String status, {String? imageUrl}) async {
+    try {
+      final response = await _stationService.checkinStation(stationId, status, imageUrl: imageUrl);
+      if (response.statusCode == 200) {
+        return response.data['message'] ?? 'Check-in thành công!';
+      }
+      throw Exception(response.data['message'] ?? 'Check-in thất bại');
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Network error');
     }

@@ -27,12 +27,14 @@ class HomeMapScreen extends StatefulWidget {
 class _HomeMapScreenState extends State<HomeMapScreen> {
   TrackAsiaMapController? _mapController;
   bool _isMapReady = false;
+  bool _hasCenteredOnUser = false;
+  bool _isProgrammaticMovement = false;
 
-  // TrackAsia style URL (free demo key)
+  // Đường dẫn cấu hình giao diện bản đồ TrackAsia (sử dụng key dùng thử công khai)
   static const String _styleUrl =
       'https://maps.track-asia.com/styles/v2/streets.json?key=public_key';
 
-  // Hanoi center (Hoan Kiem Lake)
+  // Tọa độ trung tâm Hà Nội (Hồ Hoàn Kiếm) làm vị trí khởi tạo ban đầu
   static const CameraPosition _initialCamera = CameraPosition(
     target: LatLng(21.0285, 105.8542),
     zoom: 14.5,
@@ -194,6 +196,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             routePoints.map((p) => p.longitude).reduce((a, b) => a > b ? a : b),
           ),
         );
+        _isProgrammaticMovement = true;
         _mapController!.animateCamera(
           CameraUpdate.newLatLngBounds(
             bounds,
@@ -288,11 +291,11 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
     setState(() => _isMapReady = true);
 
-    // Add markers after style is loaded
+    // Vẽ các marker lên bản đồ
     final provider = context.read<StationProvider>();
     await _updateMarkers(provider);
 
-    // Listen to provider changes
+    // Lắng nghe thay đổi dữ liệu từ Provider khi có dữ liệu mới
     provider.addListener(_onProviderChanged);
   }
 
@@ -310,12 +313,24 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     final userIcon = await MapMarkerGenerator.createUserMarkerImage();
     await _mapController!.addImage('user-marker', userIcon);
 
-    final availableIcon = await MapMarkerGenerator.createStationMarkerImage(
-      isAvailable: true,
-      logoImage: _logoImage,
-    );
-    await _mapController!.addImage('station-available', availableIcon);
+    // Đăng ký marker cho từng trạng thái check-in (viền màu khác nhau)
+    final statusMap = {
+      'EMPTY': const Color(0xFF4CAF50),     // Xanh lá
+      'MODERATE': const Color(0xFFFFC107),  // Vàng
+      'BUSY': const Color(0xFFF44336),      // Đỏ
+      'MAINTENANCE': const Color(0xFF9E9E9E), // Xám
+    };
 
+    for (final entry in statusMap.entries) {
+      final icon = await MapMarkerGenerator.createStationMarkerImage(
+        isAvailable: true,
+        logoImage: _logoImage,
+        borderColor: entry.value,
+      );
+      await _mapController!.addImage('station-${entry.key}', icon);
+    }
+
+    // Marker mặc định cho trạm không hoạt động
     final unavailableIcon = await MapMarkerGenerator.createStationMarkerImage(
       isAvailable: false,
       logoImage: _logoImage,
@@ -326,7 +341,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   Future<void> _updateMarkers(StationProvider provider) async {
     if (_mapController == null || !_isMapReady) return;
 
-    // --- Update user marker ---
+    // --- Cập nhật marker vị trí của người dùng ---
     if (provider.currentPosition != null) {
       final userLatLng = LatLng(
         provider.currentPosition!.latitude,
@@ -343,15 +358,24 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           SymbolOptions(
             geometry: userLatLng,
             iconImage: 'user-marker',
-            iconSize: 0.5,
+            iconSize: 1.0,
             iconAnchor: 'center',
           ),
         );
       }
+
+      // Tự động di chuyển camera đến vị trí của người dùng khi được tải lần đầu tiên
+      if (!_hasCenteredOnUser) {
+        _hasCenteredOnUser = true;
+        _isProgrammaticMovement = true;
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(userLatLng, 14.5),
+        );
+      }
     }
 
-    // --- Update station markers ---
-    // Remove old station symbols that are no longer in the list
+    // --- Cập nhật các marker trạm sạc ---
+    // Xóa các biểu tượng trạm sạc cũ không còn nằm trong danh sách tìm kiếm mới
     final currentStationIds = provider.stations.map((s) => s.stationId).toSet();
     final toRemove = _stationSymbols.keys
         .where((id) => !currentStationIds.contains(id))
@@ -361,13 +385,19 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       _stationSymbols.remove(id);
     }
 
-    // Add or update station symbols
+    // Thêm mới hoặc cập nhật các biểu tượng trạm sạc
     for (final station in provider.stations) {
       final stationLatLng = LatLng(station.latitude, station.longitude);
       final isAvailable = station.connectorTypes.any((c) => c.totalPorts > 0);
-      final iconName = isAvailable
-          ? 'station-available'
-          : 'station-unavailable';
+
+      // Chọn icon marker theo trạng thái check-in
+      String iconName;
+      if (!isAvailable) {
+        iconName = 'station-unavailable';
+      } else {
+        final status = station.crowdStatus ?? 'EMPTY';
+        iconName = 'station-$status';
+      }
 
       if (_stationSymbols.containsKey(station.stationId)) {
         await _mapController!.updateSymbol(
@@ -394,21 +424,22 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   void _onSymbolTapped(Symbol symbol) {
     final provider = context.read<StationProvider>();
-    // Find station id from symbol
+    // Tìm mã trạm sạc tương ứng từ biểu tượng vừa nhấn
     for (final entry in _stationSymbols.entries) {
       if (entry.value.id == symbol.id) {
         final stationId = entry.key;
         provider.fetchStationDetail(stationId);
 
-        // Find the station in the list to animate/zoom camera to its coordinates
+        // Tìm trạm sạc trong danh sách để di chuyển camera bản đồ tới tọa độ đó
         try {
           final station = provider.stations.firstWhere(
             (s) => s.stationId == stationId,
           );
+          _isProgrammaticMovement = true;
           _mapController?.animateCamera(
             CameraUpdate.newLatLngZoom(
               LatLng(station.latitude, station.longitude),
-              15.5, // Zoom in closer to the selected station
+              15.5, // Phóng to bản đồ gần hơn vào trạm sạc được chọn
             ),
           );
         } catch (e) {
@@ -436,6 +467,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 trackCameraPosition: true,
                 compassEnabled: false,
                 onCameraIdle: () {
+                  if (_isProgrammaticMovement) {
+                    _isProgrammaticMovement = false;
+                    return;
+                  }
                   if (_mapController != null) {
                     final target = _mapController!.cameraPosition?.target;
                     if (target != null) {
@@ -453,10 +488,16 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 top: MediaQuery.of(context).padding.top + 20,
                 left: 20,
                 right: 20,
-                child: _buildSearchBar(),
+                child: Column(
+                  children: [
+                    _buildSearchBar(),
+                    const SizedBox(height: 10),
+                    _buildTopsisFilters(provider),
+                  ],
+                ),
               ),
 
-              // ─── Search Suggestions Overlay ────────────
+              // ─── Lớp gợi ý tìm kiếm ────────────
               if (_showSuggestions)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 20 + 56 + 8,
@@ -474,10 +515,11 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       });
                       FocusScope.of(context).unfocus();
 
-                      // Select the station in provider
+                      // Chọn và tải chi tiết trạm sạc được gợi ý
                       provider.fetchStationDetail(station.stationId);
 
-                      // Animate camera to selected station
+                      // Di chuyển camera bản đồ đến trạm sạc được chọn
+                      _isProgrammaticMovement = true;
                       _mapController?.animateCamera(
                         CameraUpdate.newLatLngZoom(
                           LatLng(station.latitude, station.longitude),
@@ -488,7 +530,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
                 ),
 
-              // ─── Floating Action Buttons right ─────────
+              // ─── Các nút chức năng nổi bên phải ─────────
               Positioned(
                 right: 20,
                 bottom: 180,
@@ -500,6 +542,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                         await provider.moveToCurrentLocation();
                         if (provider.currentPosition != null &&
                             _mapController != null) {
+                          _isProgrammaticMovement = true;
                           _mapController!.animateCamera(
                             CameraUpdate.newLatLngZoom(
                               LatLng(
@@ -562,7 +605,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 ),
               ),
 
-              // ─── Loading Route Indicator ────────────────
+              // ─── Chỉ báo đang tải tuyến đường chỉ dẫn ────────────────
               if (_isLoadingRoute)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 80,
@@ -599,7 +642,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
                 ),
 
-              // ─── Vehicle Filter Banner ────────────────
+              // ─── Banner thông báo đang lọc theo dòng xe ────────────────
               if (provider.isFilteringByVehicle && provider.userVehicleModel != null)
                 Positioned(
                   left: 20,
@@ -648,7 +691,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
                 ),
 
-              // ─── Bottom UI Overlay ─────────────────────
+              // ─── Giao diện đè phần chân màn hình ─────────────────────
               Positioned(
                 left: 0,
                 right: 0,
@@ -689,6 +732,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             userVehicleModel: provider.userVehicleModel,
                             onStationTap: (station) {
                               provider.fetchStationDetail(station.stationId);
+                              _isProgrammaticMovement = true;
                               _mapController?.animateCamera(
                                 CameraUpdate.newLatLngZoom(
                                   LatLng(station.latitude, station.longitude),
@@ -790,6 +834,98 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTopsisFilters(StationProvider provider) {
+    final filters = [
+      {
+        'key': 'power',
+        'label': 'Sạc siêu nhanh',
+        'icon': Icons.bolt_rounded,
+      },
+      {
+        'key': 'distance',
+        'label': 'Gần nhất',
+        'icon': Icons.location_on_rounded,
+      },
+      {
+        'key': 'occupancy',
+        'label': 'Trạm vắng vẻ',
+        'icon': Icons.eco_rounded,
+      },
+      {
+        'key': 'rating',
+        'label': 'Đánh giá tốt',
+        'icon': Icons.star_rounded,
+      },
+    ];
+
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: filters.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final filter = filters[index];
+          final key = filter['key'] as String;
+          final label = filter['label'] as String;
+          final icon = filter['icon'] as IconData;
+          final isActive = provider.activeTopsisFilters.contains(key);
+
+          return GestureDetector(
+            onTap: () => provider.toggleTopsisFilter(key),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.navy : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isActive ? AppColors.navy : AppColors.lightGray.withOpacity(0.5),
+                  width: 1,
+                ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: AppColors.navy.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        )
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
+              ),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isActive ? Colors.white : AppColors.charcoal,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                        color: isActive ? Colors.white : AppColors.charcoal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

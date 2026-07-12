@@ -74,4 +74,28 @@ class UploadService {
       throw Exception(response.data['message'] ?? 'Lỗi tải ảnh lên');
     }
   }
+
+  Future<String> uploadCheckin(File file) async {
+    String fileName = file.path.split('/').last;
+    String mimeType = _getMimeType(fileName);
+
+    FormData formData = FormData.fromMap({
+      "file": await MultipartFile.fromFile(
+        file.path,
+        filename: fileName,
+        contentType: MediaType.parse(mimeType),
+      ),
+    });
+
+    final response = await _dioClient.dio.post(
+      '/api/uploads/checkin',
+      data: formData,
+    );
+
+    if (response.data['success'] == true) {
+      return response.data['data']['url'];
+    } else {
+      throw Exception(response.data['message'] ?? 'Lỗi tải ảnh check-in lên');
+    }
+  }
 }

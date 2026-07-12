@@ -10,6 +10,7 @@ class UserModel {
   final String? avatarUrl;
   final String? vehicleModel;
   final String? connectorType;
+  final int rewardPoints;
 
   const UserModel({
     this.userId,
@@ -21,6 +22,7 @@ class UserModel {
     this.avatarUrl,
     this.vehicleModel,
     this.connectorType,
+    this.rewardPoints = 0,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class UserModel {
       avatarUrl: json['avatarUrl'] ?? json['avatar_url'] as String?,
       vehicleModel: json['vehicleModel'] ?? json['vehicle_model'] as String?,
       connectorType: json['connectorType'] ?? json['connector_type'] as String?,
+      rewardPoints: json['rewardPoints'] ?? json['reward_points'] ?? 0,
     );
   }
 
@@ -48,6 +51,7 @@ class UserModel {
       'avatarUrl': avatarUrl,
       'vehicleModel': vehicleModel,
       'connectorType': connectorType,
+      'rewardPoints': rewardPoints,
     };
   }
 }

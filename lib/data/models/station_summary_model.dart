@@ -14,6 +14,14 @@ class StationSummaryModel {
   final double distance;
   final List<ConnectorTypeModel> connectorTypes;
 
+  // ── Trạng thái check-in thời gian thực ──
+  final String? crowdStatus;
+  final String? statusUpdatedAt;
+  final String? statusUpdatedByName;
+
+  // ── Điểm phù hợp TOPSIS ──
+  final int? matchScore;
+
   StationSummaryModel({
     required this.stationId,
     required this.name,
@@ -26,6 +34,10 @@ class StationSummaryModel {
     required this.totalReviews,
     required this.distance,
     required this.connectorTypes,
+    this.crowdStatus,
+    this.statusUpdatedAt,
+    this.statusUpdatedByName,
+    this.matchScore,
   });
 
   factory StationSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +57,10 @@ class StationSummaryModel {
       totalReviews: json['totalReviews'] ?? 0,
       distance: (json['distance'] ?? 0.0).toDouble(),
       connectorTypes: connectors,
+      crowdStatus: json['crowdStatus'],
+      statusUpdatedAt: json['statusUpdatedAt'],
+      statusUpdatedByName: json['statusUpdatedByName'],
+      matchScore: json['matchScore'],
     );
   }
 }

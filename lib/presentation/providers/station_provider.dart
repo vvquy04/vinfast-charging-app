@@ -1,11 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../data/models/station_summary_model.dart';
 import '../../data/models/station_detail_model.dart';
 import '../../data/repositories/station_repository.dart';
+import '../../data/services/upload_service.dart';
 
 class StationProvider with ChangeNotifier {
   final StationRepository _repository;
+  final UploadService _uploadService;
+
+  StationProvider(this._repository, this._uploadService) {
+    _initLocation();
+  }
 
   List<StationSummaryModel> _stations = [];
   List<StationSummaryModel> get stations => _stations;
@@ -30,18 +37,18 @@ class StationProvider with ChangeNotifier {
   static const double _defaultLatitude = 21.0285;
   static const double _defaultLongitude = 105.8542;
 
-  // ─── Vị trí tìm kiếm hiện tại (theo chuyển động bản đồ hoặc vị trí hiện tại) ────
+  // ─── Vị trí tìm kiếm hiện tại ────
   double? _searchLatitude;
   double? _searchLongitude;
   double? get searchLatitude => _searchLatitude;
   double? get searchLongitude => _searchLongitude;
 
-  // ─── Vị trí đã fetch dữ liệu gần nhất (để tối ưu hóa, tránh gọi API liên tục khi di chuyển nhỏ) ────
+  // ─── Vị trí đã fetch dữ liệu gần nhất ────
   double? _lastFetchedLatitude;
   double? _lastFetchedLongitude;
 
   // ─── Trạng thái bộ lọc ─────────────────────────────
-  double _radius = 200.0; // 200km để bao phủ toàn bộ khu vực miền Bắc (gồm Quảng Ninh, Hải Phòng, Hà Nội)
+  double _radius = 15.0;
   double get radius => _radius;
 
   String? _connectorType;
@@ -66,17 +73,105 @@ class StationProvider with ChangeNotifier {
   bool _isFilteringByVehicle = false;
   bool get isFilteringByVehicle => _isFilteringByVehicle;
 
+  // ─── Trạng thái TOPSIS (Gợi ý thông minh) ──────────
+  bool _useTopsis = false;
+  bool get useTopsis => _useTopsis;
+
+  Set<String> _activeTopsisFilters = {};
+  Set<String> get activeTopsisFilters => _activeTopsisFilters;
+
+  // Trọng số TOPSIS (tự động điều chỉnh theo bộ lọc đang chọn)
+  double get weightDistance => _activeTopsisFilters.contains('distance') ? 5.0 : 1.0;
+  double get weightPower => _activeTopsisFilters.contains('power') ? 5.0 : 1.0;
+  double get weightOccupancy => _activeTopsisFilters.contains('occupancy') ? 5.0 : 1.0;
+  double get weightRating => _activeTopsisFilters.contains('rating') ? 5.0 : 1.0;
+
+  // ─── Trạng thái Check-in ──────────
+  bool _isCheckinLoading = false;
+  bool get isCheckinLoading => _isCheckinLoading;
+
+  String? _checkinMessage;
+  String? get checkinMessage => _checkinMessage;
+
   /// Kiểm tra xem có bộ lọc nào đang được áp dụng không
   bool get hasActiveFilters =>
-      _connectorType != null || _minPowerKw != null || _minRating != null || _isFilteringByVehicle;
+      _connectorType != null || _minPowerKw != null || _minRating != null || _isFilteringByVehicle || _useTopsis;
   
-  StationProvider(this._repository) {
-    _initLocation();
+  // Constructor initialized above
+
+  // ═══════════════════════════════════════════════════
+  // TOPSIS FILTERS
+  // ═══════════════════════════════════════════════════
+
+  /// Bật/tắt một bộ lọc TOPSIS (distance, power, occupancy, rating)
+  void toggleTopsisFilter(String filter) {
+    if (_activeTopsisFilters.contains(filter)) {
+      _activeTopsisFilters.remove(filter);
+    } else {
+      _activeTopsisFilters.add(filter);
+    }
+
+    // Tự động bật/tắt TOPSIS dựa trên số lượng filter đang chọn
+    _useTopsis = _activeTopsisFilters.isNotEmpty;
+    _lastFetchedLatitude = null;
+    _lastFetchedLongitude = null;
+    notifyListeners();
+    fetchNearbyStations();
   }
+
+  /// Xóa toàn bộ TOPSIS filters
+  void clearTopsisFilters() {
+    _activeTopsisFilters = {};
+    _useTopsis = false;
+    _lastFetchedLatitude = null;
+    _lastFetchedLongitude = null;
+    notifyListeners();
+    fetchNearbyStations();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // CHECK-IN
+  // ═══════════════════════════════════════════════════
+
+  /// Gọi API check-in tại trạm sạc
+  Future<bool> checkinStation(int stationId, String status, {File? imageFile}) async {
+    _isCheckinLoading = true;
+    _checkinMessage = null;
+    notifyListeners();
+
+    try {
+      String? imageUrl;
+      if (imageFile != null) {
+        imageUrl = await _uploadService.uploadCheckin(imageFile);
+      }
+
+      final message = await _repository.checkinStation(stationId, status, imageUrl: imageUrl);
+      _checkinMessage = message;
+
+      // Tải lại chi tiết trạm sạc để cập nhật trạng thái
+      await fetchStationDetail(stationId);
+
+      // Buộc tải lại danh sách trạm sạc
+      _lastFetchedLatitude = null;
+      _lastFetchedLongitude = null;
+      await fetchNearbyStations();
+
+      return true;
+    } catch (e) {
+      _checkinMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _isCheckinLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════
+  // LOCATION & SEARCH (giữ nguyên logic cũ)
+  // ═══════════════════════════════════════════════════
 
   Future<void> _initLocation() async {
     try {
-      // 1. Kiểm tra GPS có bật không
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         debugPrint('GPS disabled - using default location (Hanoi)');
@@ -84,15 +179,11 @@ class StationProvider with ChangeNotifier {
         return;
       }
 
-      // 2. Kiểm tra quyền vị trí
       LocationPermission permission = await Geolocator.checkPermission();
-
       if (permission == LocationPermission.denied) {
-        // Hiển thị popup xin quyền truy cập vị trí
         permission = await Geolocator.requestPermission();
       }
 
-      // 3. Nếu người dùng từ chối (denied hoặc deniedForever) → dùng vị trí mặc định
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         debugPrint('Location permission denied - using default location (Hanoi)');
@@ -100,7 +191,6 @@ class StationProvider with ChangeNotifier {
         return;
       }
 
-      // 4. Đã được cấp quyền → lấy vị trí thật của người dùng
       debugPrint('Location permission granted - fetching current location...');
       await moveToCurrentLocation();
     } catch (e) {
@@ -109,7 +199,6 @@ class StationProvider with ChangeNotifier {
     }
   }
 
-  /// Sử dụng vị trí mặc định (Hà Nội) và tải danh sách trạm sạc
   void _useDefaultLocationAndFetch() {
     _usingDefaultLocation = true;
     _currentPosition = Position(
@@ -135,7 +224,6 @@ class StationProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Kiểm tra quyền trước khi lấy vị trí
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -143,20 +231,49 @@ class StationProvider with ChangeNotifier {
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        // Quyền bị từ chối → dùng vị trí mặc định
         if (_currentPosition == null) {
           _useDefaultLocationAndFetch();
         }
         return;
       }
 
+      // 1. Lấy vị trí đã biết gần nhất trước để hiển thị ngay lập tức (tránh chờ lâu)
+      Position? lastPosition = await Geolocator.getLastKnownPosition();
+      if (lastPosition != null) {
+        _currentPosition = lastPosition;
+        _searchLatitude = lastPosition.latitude;
+        _searchLongitude = lastPosition.longitude;
+        _usingDefaultLocation = false;
+        notifyListeners();
+        fetchNearbyStations(); // Tải trạm sạc ngay lập tức với vị trí cũ trước
+      }
+
+      // 2. Chạy ngầm lấy vị trí GPS cập nhật với giới hạn tối đa 3 giây
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+        desiredAccuracy: LocationAccuracy.medium, // Medium sẽ trả về nhanh hơn rất nhiều so với High
+        timeLimit: const Duration(seconds: 3),    // Quá 3 giây sẽ nhảy vào catchError
+      ).catchError((e) {
+        debugPrint('Timeout lấy GPS chính xác - sử dụng vị trí gần nhất: $e');
+        if (lastPosition != null) return lastPosition;
+        if (_currentPosition != null) return _currentPosition!; // Giữ nguyên vị trí cũ đang hiển thị, tránh nhảy về Hoàn Kiếm
+        // Nếu hoàn toàn chưa có vị trí nào, trả về vị trí mặc định Hà Nội để tránh lỗi
+        return Position(
+          latitude: _defaultLatitude,
+          longitude: _defaultLongitude,
+          timestamp: DateTime.now(),
+          accuracy: 0,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        );
+      });
+
       _currentPosition = position;
-      _usingDefaultLocation = false;
+      _usingDefaultLocation = (position.latitude == _defaultLatitude && position.longitude == _defaultLongitude);
       
-      // Reset vị trí tìm kiếm và vị trí fetch gần nhất về vị trí thực của người dùng
       _searchLatitude = position.latitude;
       _searchLongitude = position.longitude;
       _lastFetchedLatitude = null;
@@ -166,7 +283,6 @@ class StationProvider with ChangeNotifier {
       await fetchNearbyStations();
     } catch (e) {
       debugPrint('Error getting location: $e');
-      // Nếu chưa có vị trí nào → dùng vị trí mặc định
       if (_currentPosition == null) {
         _useDefaultLocationAndFetch();
       } else {
@@ -177,14 +293,12 @@ class StationProvider with ChangeNotifier {
     }
   }
 
-  /// Cập nhật vị trí tìm kiếm khi người dùng di chuyển bản đồ
   Future<void> updateSearchPosition(double latitude, double longitude) async {
     _searchLatitude = latitude;
     _searchLongitude = longitude;
     await fetchNearbyStations();
   }
 
-  /// Tính khoảng cách từ vị trí người dùng (hoặc vị trí mặc định) tới trạm sạc (đơn vị: km)
   double getDistanceToUser(double stationLat, double stationLng) {
     final double userLat = _currentPosition?.latitude ?? _defaultLatitude;
     final double userLng = _currentPosition?.longitude ?? _defaultLongitude;
@@ -212,7 +326,6 @@ class StationProvider with ChangeNotifier {
     final double searchLat = _searchLatitude ?? _currentPosition?.latitude ?? _defaultLatitude;
     final double searchLng = _searchLongitude ?? _currentPosition?.longitude ?? _defaultLongitude;
     
-    // Tối ưu hóa: Nếu vị trí tìm kiếm mới cách vị trí fetch gần nhất dưới 200m thì bỏ qua không fetch lại
     if (_lastFetchedLatitude != null && _lastFetchedLongitude != null) {
       final double distanceMoved = Geolocator.distanceBetween(
         _lastFetchedLatitude!,
@@ -231,7 +344,7 @@ class StationProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('Searching charging stations: lat=$searchLat, lng=$searchLng, radius=$_radius km');
+      debugPrint('Searching charging stations: lat=$searchLat, lng=$searchLng, radius=$_radius km, topsis=$_useTopsis');
       
       final rawConnector = _isFilteringByVehicle ? (_connectorType ?? _userConnectorType) : _connectorType;
       final dbConnectorType = _mapToDbConnector(rawConnector);
@@ -242,15 +355,17 @@ class StationProvider with ChangeNotifier {
         radius: _radius,
         connectorType: dbConnectorType,
         minPowerKw: _minPowerKw,
+        maxPowerKw: _maxPowerKw,
         minRating: _minRating,
+        useTopsis: _useTopsis,
+        weightDistance: weightDistance,
+        weightPower: weightPower,
+        weightOccupancy: weightOccupancy,
+        weightRating: weightRating,
+        userLatitude: _currentPosition?.latitude,
+        userLongitude: _currentPosition?.longitude,
       );
       _stations = data;
-      if (_maxPowerKw != null) {
-        _stations = data.where((station) {
-          // Trạm sạc phù hợp nếu có ít nhất 1 cổng sạc có công suất <= maxPowerKw
-          return station.connectorTypes.any((c) => c.powerKw <= _maxPowerKw!);
-        }).toList();
-      }
       _lastFetchedLatitude = searchLat;
       _lastFetchedLongitude = searchLng;
       debugPrint('Found ${data.length} charging stations');
@@ -263,7 +378,6 @@ class StationProvider with ChangeNotifier {
     }
   }
 
-  /// Áp dụng bộ lọc và tải lại danh sách trạm sạc
   Future<void> applyFilters({
     String? connectorType,
     int? minPowerKw,
@@ -279,7 +393,6 @@ class StationProvider with ChangeNotifier {
     await fetchNearbyStations();
   }
 
-  /// Xóa tất cả bộ lọc và tải lại danh sách
   Future<void> clearFilters() async {
     _connectorType = null;
     _minPowerKw = null;
@@ -291,7 +404,6 @@ class StationProvider with ChangeNotifier {
     await fetchNearbyStations();
   }
 
-  /// Thiết lập thông tin xe người dùng và tự động bật lọc theo xe
   void setUserVehicle(String? vehicleModel, String? connectorType) {
     _userVehicleModel = vehicleModel;
     _userConnectorType = connectorType;
@@ -304,7 +416,6 @@ class StationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tắt bộ lọc theo xe nhưng giữ lại thông tin xe
   Future<void> clearVehicleFilter() async {
     _isFilteringByVehicle = false;
     _lastFetchedLatitude = null;
@@ -312,7 +423,6 @@ class StationProvider with ChangeNotifier {
     await fetchNearbyStations();
   }
 
-  /// Bật lại bộ lọc theo xe
   Future<void> enableVehicleFilter() async {
     if (_userConnectorType != null) {
       _isFilteringByVehicle = true;
@@ -350,4 +460,3 @@ class StationProvider with ChangeNotifier {
     notifyListeners();
   }
 }
-
