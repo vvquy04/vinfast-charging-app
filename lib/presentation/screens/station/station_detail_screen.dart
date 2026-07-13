@@ -288,7 +288,11 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                           );
                         }
                       : () {
-                          Navigator.pushNamed(context, '/qr_scanner');
+                          Navigator.pushNamed(
+                            context,
+                            '/qr_scanner',
+                            arguments: {'stationId': detail.stationId},
+                          );
                         },
                   icon: const Icon(Icons.flash_on_rounded, size: 18),
                   label: const Text(

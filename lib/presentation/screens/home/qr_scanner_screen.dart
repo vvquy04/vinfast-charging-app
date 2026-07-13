@@ -35,6 +35,20 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final chargingProvider = context.read<ChargingProvider>();
+    final activeBooking = chargingProvider.activeBooking;
+
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null && args['stationId'] != null) {
+      _selectedStationId = args['stationId'] as int;
+    } else if (activeBooking != null) {
+      _selectedStationId = activeBooking['station']['stationId'] as int;
+    }
+  }
+
+  @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
