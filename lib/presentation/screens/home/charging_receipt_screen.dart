@@ -4,23 +4,17 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/widgets/app_button.dart';
 
 class ChargingReceiptScreen extends StatelessWidget {
-  final String stationName;
-  final String connectorType;
-  final double energyCharged;
-  final double totalCost;
-  final int durationSeconds;
-
-  const ChargingReceiptScreen({
-    super.key,
-    required this.stationName,
-    required this.connectorType,
-    required this.energyCharged,
-    required this.totalCost,
-    required this.durationSeconds,
-  });
+  const ChargingReceiptScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final stationName = args['stationName'] as String;
+    final connectorType = args['connectorType'] as String;
+    final energyCharged = args['energyCharged'] as double;
+    final totalCost = args['totalCost'] as double;
+    final durationSeconds = args['durationSeconds'] as int;
+
     // Format thời gian sạc hh:mm:ss
     final duration = Duration(seconds: durationSeconds);
     String twoDigits(int n) => n.toString().padLeft(2, '0');

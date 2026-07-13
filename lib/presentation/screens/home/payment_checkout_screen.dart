@@ -60,10 +60,10 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.blue.withOpacity(0.1),
+                            color: const Color(0xFF2196F3).withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.flash_on_rounded, color: AppColors.blue),
+                          child: const Icon(Icons.flash_on_rounded, color: Color(0xFF2196F3)),
                         ),
                         const SizedBox(width: AppSizes.sm),
                         Expanded(
@@ -141,7 +141,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
               // Action Buttons
               if (chargingProvider.balance < 50000) ...[
                 Container(
-                  margin: const EdgeInsets.bottom(12),
+                  margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.08),
