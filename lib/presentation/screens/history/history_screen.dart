@@ -124,7 +124,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           separatorBuilder: (context, index) => const SizedBox(height: AppSizes.md),
           itemBuilder: (context, index) {
             final session = provider.chargingHistory[index];
-            final stationName = session['station'] != null ? session['station']['stationName'] as String : 'Trạm sạc';
+            final stationName = session['station'] != null ? (session['station']['name'] ?? session['station']['stationName'] ?? 'Trạm sạc').toString() : 'Trạm sạc';
             final totalCost = (session['totalCost'] ?? 0.0) as double;
             final energy = (session['energyCharged'] ?? 0.0) as double;
             final power = (session['powerKw'] ?? 0.0) as double;

@@ -33,7 +33,7 @@ class _ChargingStatusScreenState extends State<ChargingStatusScreen> {
     }
 
     final stationName = session != null && session['station'] != null
-        ? session['station']['stationName'] as String
+        ? (session['station']['name'] ?? session['station']['stationName'] ?? 'Trạm sạc VinFast').toString()
         : 'Trạm sạc VinFast';
     final connectorType = session != null ? session['connectorType'] as String : 'CCS2';
 

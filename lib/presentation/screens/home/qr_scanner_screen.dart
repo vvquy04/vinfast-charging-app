@@ -141,7 +141,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with SingleTickerProv
                       border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.5)),
                     ),
                     child: Text(
-                      'Đang quét mã để nhận chỗ tại trạm:\n${activeBooking['station']['stationName']}',
+                      'Đang quét mã để nhận chỗ tại trạm:\n${activeBooking['station']['name'] ?? activeBooking['station']['stationName'] ?? ''}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Color(0xFF64B5F6), fontSize: 13, height: 1.4),
                     ),

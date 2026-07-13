@@ -733,7 +733,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Đã đặt chỗ: ${chargingProvider.activeBooking!['station']['stationName']}',
+                                'Đã đặt chỗ: ${chargingProvider.activeBooking!['station']['name'] ?? chargingProvider.activeBooking!['station']['stationName'] ?? ''}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
