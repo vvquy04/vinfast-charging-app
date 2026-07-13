@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/utils/dio_client.dart';
-import '../../providers/auth_provider.dart';
+import 'auth_provider.dart';
 
 class ChargingProvider extends ChangeNotifier {
   final DioClient _dio = DioClient();
@@ -47,7 +47,7 @@ class ChargingProvider extends ChangeNotifier {
 
   Future<void> fetchWalletBalance() async {
     try {
-      final response = await _dio.get('/api/users/profile');
+      final response = await _dio.dio.get('/api/users/profile');
       if (response.data != null && response.data['data'] != null) {
         _balance = (response.data['data']['balance'] ?? 0.0).toDouble();
         notifyListeners();
@@ -61,7 +61,7 @@ class ChargingProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await _dio.post(
+      final response = await _dio.dio.post(
         '/api/payment/vnpay/create-url',
         data: {'amount': amount},
       );
@@ -82,7 +82,7 @@ class ChargingProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await _dio.post(
+      final response = await _dio.dio.post(
         '/api/payment/deposit',
         data: {'amount': amount},
       );
@@ -108,7 +108,7 @@ class ChargingProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await _dio.post(
+      final response = await _dio.dio.post(
         '/api/bookings/create',
         data: {
           'stationId': stationId,
@@ -137,7 +137,7 @@ class ChargingProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final bookingId = _activeBooking!['bookingId'];
-      final response = await _dio.post('/api/bookings/cancel/$bookingId');
+      final response = await _dio.dio.post('/api/bookings/cancel/$bookingId');
       _isLoading = false;
       if (response.data != null && response.data['success'] == true) {
         _activeBooking = null;
@@ -156,7 +156,7 @@ class ChargingProvider extends ChangeNotifier {
 
   Future<void> fetchActiveBooking() async {
     try {
-      final response = await _dio.get('/api/bookings/active');
+      final response = await _dio.dio.get('/api/bookings/active');
       if (response.data != null && response.data['data'] != null && response.data['data'].isNotEmpty) {
         _activeBooking = response.data['data'];
         _startBookingCountdown();
@@ -172,7 +172,7 @@ class ChargingProvider extends ChangeNotifier {
 
   Future<void> fetchBookingHistory() async {
     try {
-      final response = await _dio.get('/api/bookings/history');
+      final response = await _dio.dio.get('/api/bookings/history');
       if (response.data != null && response.data['data'] != null) {
         _bookingHistory = response.data['data'];
         notifyListeners();
@@ -225,7 +225,7 @@ class ChargingProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await _dio.post(
+      final response = await _dio.dio.post(
         '/api/charging/start',
         data: {
           'stationId': stationId,
@@ -257,7 +257,7 @@ class ChargingProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final sessionId = _activeSession!['sessionId'];
-      final response = await _dio.post(
+      final response = await _dio.dio.post(
         '/api/charging/stop',
         data: {
           'sessionId': sessionId,
@@ -282,7 +282,7 @@ class ChargingProvider extends ChangeNotifier {
 
   Future<void> fetchActiveSession() async {
     try {
-      final response = await _dio.get('/api/charging/active');
+      final response = await _dio.dio.get('/api/charging/active');
       if (response.data != null && response.data['data'] != null && response.data['data'].isNotEmpty) {
         _activeSession = response.data['data'];
         final double powerKw = (_activeSession!['powerKw'] ?? 30.0).toDouble();
@@ -309,7 +309,7 @@ class ChargingProvider extends ChangeNotifier {
 
   Future<void> fetchChargingHistory() async {
     try {
-      final response = await _dio.get('/api/charging/history');
+      final response = await _dio.dio.get('/api/charging/history');
       if (response.data != null && response.data['data'] != null) {
         _chargingHistory = response.data['data'];
         notifyListeners();

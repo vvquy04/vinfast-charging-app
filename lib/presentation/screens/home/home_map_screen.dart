@@ -1026,6 +1026,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         },
       ),
     );
+  }
+
   String _formatSeconds(int totalSeconds) {
     final int minutes = totalSeconds ~/ 60;
     final int seconds = totalSeconds % 60;

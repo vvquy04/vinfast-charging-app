@@ -130,7 +130,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             final power = (session['powerKw'] ?? 0.0) as double;
             final startTimeStr = session['startTime'] as String;
             final date = DateTime.parse(startTimeStr);
-            final dateFormatted = '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, \'0\')}';
+            final dateFormatted = '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
 
             return Container(
               padding: const EdgeInsets.all(AppSizes.md),
