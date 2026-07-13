@@ -39,6 +39,8 @@ import 'presentation/screens/station/booking_checkout_screen.dart';
 import 'presentation/screens/home/qr_scanner_screen.dart';
 import 'presentation/screens/home/charging_status_screen.dart';
 import 'presentation/screens/profile/wallet_screen.dart';
+import 'presentation/screens/home/payment_checkout_screen.dart';
+import 'presentation/screens/home/charging_receipt_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -159,6 +161,8 @@ class EVCPointApp extends StatelessWidget {
         '/qr_scanner': (context) => const QRScannerScreen(),
         '/charging_status': (context) => const ChargingStatusScreen(),
         '/wallet': (context) => const WalletScreen(),
+        '/payment_checkout': (context) => const PaymentCheckoutScreen(),
+        '/charging_receipt': (context) => const ChargingReceiptScreen(),
       },
     );
   }
