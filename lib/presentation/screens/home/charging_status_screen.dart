@@ -154,17 +154,16 @@ class _ChargingStatusScreenState extends State<ChargingStatusScreen> {
 
                           final success = await chargingProvider.stopCharging();
                           if (success && mounted) {
-                            Navigator.pushReplacement(
+                            Navigator.pushReplacementNamed(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => ChargingReceiptScreen(
-                                  stationName: stationName,
-                                  connectorType: connectorType,
-                                  energyCharged: kwh,
-                                  totalCost: cost,
-                                  durationSeconds: elapsed,
-                                ),
-                              ),
+                              '/charging_receipt',
+                              arguments: {
+                                'stationName': stationName,
+                                'connectorType': connectorType,
+                                'energyCharged': kwh,
+                                'totalCost': cost,
+                                'durationSeconds': elapsed,
+                              },
                             );
                           } else if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
