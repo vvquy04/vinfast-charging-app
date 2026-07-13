@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/charging_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import 'profile_screen.dart';
@@ -21,6 +22,7 @@ class _AccountScreenState extends State<AccountScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().fetchProfile();
+      context.read<ChargingProvider>().fetchWalletBalance();
     });
   }
 
@@ -146,6 +148,18 @@ class _AccountScreenState extends State<AccountScreen> {
                 icon: Icons.directions_car_filled_rounded,
                 title: 'Phương tiện của tôi',
                 onTap: _navigateToProfile,
+              ),
+              Consumer<ChargingProvider>(
+                builder: (context, chargingProvider, child) {
+                  return _buildSettingsItem(
+                    icon: Icons.account_balance_wallet_rounded,
+                    title: 'Ví điện tử EVCPoint',
+                    trailingText: '${chargingProvider.balance.toStringAsFixed(0)} đ',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/wallet');
+                    },
+                  );
+                },
               ),
               _buildSettingsItem(
                 icon: Icons.security_rounded,

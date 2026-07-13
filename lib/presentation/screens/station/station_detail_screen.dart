@@ -234,6 +234,80 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg, vertical: 12),
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            border: Border(top: BorderSide(color: AppColors.silver, width: 1)),
+          ),
+          child: Row(
+            children: [
+              // Nút 1: Đặt chỗ trước
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: !isAuthenticated
+                      ? () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Vui lòng đăng nhập để đặt chỗ trước!')),
+                          );
+                        }
+                      : () {
+                          Navigator.pushNamed(
+                            context,
+                            '/booking_checkout',
+                            arguments: {
+                              'stationId': detail.stationId,
+                              'stationName': detail.name,
+                              'address': detail.address,
+                              'connectors': detail.connectorTypes,
+                            },
+                          );
+                        },
+                  icon: const Icon(Icons.calendar_today_rounded, size: 18),
+                  label: const Text(
+                    'Đặt chỗ trước',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.black,
+                    side: const BorderSide(color: AppColors.black, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Nút 2: Sạc ngay
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: !isAuthenticated
+                      ? () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Vui lòng đăng nhập để sạc xe!')),
+                          );
+                        }
+                      : () {
+                          Navigator.pushNamed(context, '/qr_scanner');
+                        },
+                  icon: const Icon(Icons.flash_on_rounded, size: 18),
+                  label: const Text(
+                    'Sạc ngay (QR)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.black,
+                    foregroundColor: AppColors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

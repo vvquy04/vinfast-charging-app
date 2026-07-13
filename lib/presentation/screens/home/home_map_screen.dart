@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/station_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/charging_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import 'helpers/map_marker_generator.dart';
 import 'widgets/station_filter_bottom_sheet.dart';
@@ -73,6 +74,17 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       final user = authProvider.currentUser;
       if (user != null && user.vehicleModel != null) {
         stationProvider.setUserVehicle(user.vehicleModel, user.connectorType);
+      }
+
+      // Tải thông tin sạc & đặt chỗ hoạt động nếu có
+      if (authProvider.isAuthenticated) {
+        final chargingProvider = context.read<ChargingProvider>();
+        chargingProvider.fetchActiveBooking();
+        chargingProvider.fetchActiveSession().then((_) {
+          if (chargingProvider.activeSession != null && mounted) {
+            Navigator.pushNamed(context, '/charging_status');
+          }
+        });
       }
     });
   }
@@ -452,6 +464,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final chargingProvider = context.watch<ChargingProvider>();
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Consumer<StationProvider>(
@@ -685,6 +698,91 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             ),
                             child: const Icon(Icons.close_rounded, size: 16, color: AppColors.gray),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // ─── Banner thông báo đặt chỗ PENDING nổi ────────────────
+              if (chargingProvider.activeBooking != null)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 120,
+                  left: 20,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF003087),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.black.withOpacity(0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.alarm_on_rounded, color: Colors.white, size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Đã đặt chỗ: ${chargingProvider.activeBooking!['station']['stationName']}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Hết hạn sau: ${_formatSeconds(chargingProvider.bookingRemainingSeconds)}',
+                                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF003087),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/qr_scanner');
+                          },
+                          child: const Text('Sạc ngay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Hủy lịch đặt chỗ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                content: const Text('Bạn có chắc chắn muốn hủy giữ chỗ này không? Lệ phí 20.000đ sẽ được hoàn trả.'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Không')),
+                                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Có, Hủy')),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              await chargingProvider.cancelActiveBooking();
+                            }
+                          },
+                          child: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
                         ),
                       ],
                     ),
@@ -928,6 +1026,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         },
       ),
     );
+  String _formatSeconds(int totalSeconds) {
+    final int minutes = totalSeconds ~/ 60;
+    final int seconds = totalSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 }
 

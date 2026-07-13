@@ -34,6 +34,11 @@ import 'presentation/screens/home/dashboard_screen.dart';
 import 'presentation/screens/station/station_detail_screen.dart';
 import 'presentation/screens/profile/change_password_screen.dart';
 import 'presentation/screens/auth/reset_password_screen.dart';
+import 'presentation/providers/charging_provider.dart';
+import 'presentation/screens/station/booking_checkout_screen.dart';
+import 'presentation/screens/home/qr_scanner_screen.dart';
+import 'presentation/screens/home/charging_status_screen.dart';
+import 'presentation/screens/profile/wallet_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,6 +86,9 @@ void main() {
           create: (_) => HistoryProvider(
             HistoryRepository(HistoryService(dioClient)),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ChargingProvider(),
         ),
       ],
       child: const EVCPointApp(),
@@ -147,6 +155,10 @@ class EVCPointApp extends StatelessWidget {
         '/station_detail': (context) => const StationDetailScreen(),
         '/change-password': (context) => const ChangePasswordScreen(),
         '/reset-password': (context) => const ResetPasswordScreen(),
+        '/booking_checkout': (context) => const BookingCheckoutScreen(),
+        '/qr_scanner': (context) => const QRScannerScreen(),
+        '/charging_status': (context) => const ChargingStatusScreen(),
+        '/wallet': (context) => const WalletScreen(),
       },
     );
   }
