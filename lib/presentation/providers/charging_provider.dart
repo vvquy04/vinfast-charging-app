@@ -47,7 +47,7 @@ class ChargingProvider extends ChangeNotifier {
 
   Future<void> fetchWalletBalance() async {
     try {
-      final response = await _dio.dio.get('/api/users/profile');
+      final response = await _dio.dio.get('/api/users/me');
       if (response.data != null && response.data['data'] != null) {
         _balance = (response.data['data']['balance'] ?? 0.0).toDouble();
         notifyListeners();
